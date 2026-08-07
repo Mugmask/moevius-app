@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-archivo-black);
+  --font-display: var(--font-archivo-black);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +49,88 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Paleta Moevius: papel hueso, tinta negra y un verde de resaltador.
+ *
+ * El verde es plano y opaco, como marcador sobre papel — nunca una luz. Si lo
+ * ves brillar, hay un box-shadow de color o un degradado que sobra.
+ * Los neutros son cálidos (hue 95, chroma bajo) y el verde es frío: ese
+ * contraste es lo que hace que el acento salte sin necesidad de glow.
+ *
+ * Nunca uses un color literal en un componente — sumá o consumí un token (ver AGENTS.md).
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.958 0.007 95);
+  --foreground: oklch(0.17 0.008 95);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.17 0.008 95);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.17 0.008 95);
+  --primary: oklch(0.86 0.235 143);
+  --primary-foreground: oklch(0.17 0.008 95);
+  --secondary: oklch(1 0 0);
+  --secondary-foreground: oklch(0.17 0.008 95);
+  --muted: oklch(0.925 0.008 95);
+  --muted-foreground: oklch(0.46 0.012 95);
+  --accent: oklch(0.86 0.235 143);
+  --accent-foreground: oklch(0.17 0.008 95);
+  --destructive: oklch(0.55 0.23 27);
+  --border: oklch(0.87 0.008 95);
+  --input: oklch(0.87 0.008 95);
+  --ring: oklch(0.17 0.008 95);
+  --chart-1: oklch(0.86 0.235 143);
+  --chart-2: oklch(0.17 0.008 95);
+  --chart-3: oklch(0.7 0.19 43);
+  --chart-4: oklch(0.62 0.21 300);
+  --chart-5: oklch(0.85 0.17 90);
+  --radius: 0.75rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.17 0.008 95);
+  --sidebar-primary: oklch(0.86 0.235 143);
+  --sidebar-primary-foreground: oklch(0.17 0.008 95);
+  --sidebar-accent: oklch(0.925 0.008 95);
+  --sidebar-accent-foreground: oklch(0.17 0.008 95);
+  --sidebar-border: oklch(0.87 0.008 95);
+  --sidebar-ring: oklch(0.17 0.008 95);
 }
 
+/*
+ * En oscuro se invierte el papel, no el acento: el verde de resaltador es el
+ * mismo color exacto en los dos temas. Es tinta plana, y la tinta no cambia
+ * de tono porque apagues la luz.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.16 0.006 95);
+  --foreground: oklch(0.955 0.007 95);
+  --card: oklch(0.21 0.007 95);
+  --card-foreground: oklch(0.955 0.007 95);
+  --popover: oklch(0.21 0.007 95);
+  --popover-foreground: oklch(0.955 0.007 95);
+  --primary: oklch(0.86 0.235 143);
+  --primary-foreground: oklch(0.17 0.008 95);
+  --secondary: oklch(0.26 0.008 95);
+  --secondary-foreground: oklch(0.955 0.007 95);
+  --muted: oklch(0.26 0.008 95);
+  --muted-foreground: oklch(0.7 0.012 95);
+  --accent: oklch(0.86 0.235 143);
+  --accent-foreground: oklch(0.17 0.008 95);
+  --destructive: oklch(0.65 0.22 27);
+  --border: oklch(0.34 0.008 95);
+  --input: oklch(0.34 0.008 95);
+  --ring: oklch(0.955 0.007 95);
+  --chart-1: oklch(0.86 0.235 143);
+  --chart-2: oklch(0.955 0.007 95);
+  --chart-3: oklch(0.75 0.19 43);
+  --chart-4: oklch(0.68 0.21 300);
+  --chart-5: oklch(0.85 0.17 90);
+  --sidebar: oklch(0.21 0.007 95);
+  --sidebar-foreground: oklch(0.955 0.007 95);
+  --sidebar-primary: oklch(0.86 0.235 143);
+  --sidebar-primary-foreground: oklch(0.17 0.008 95);
+  --sidebar-accent: oklch(0.26 0.008 95);
+  --sidebar-accent-foreground: oklch(0.955 0.007 95);
+  --sidebar-border: oklch(0.34 0.008 95);
+  --sidebar-ring: oklch(0.955 0.007 95);
 }
 
 @layer base {
@@ -126,5 +142,88 @@
   }
   html {
     @apply font-sans;
+    /* `clip` y no `hidden`: recorta lo que se pasa de ancho sin crear un contenedor
+       de scroll, así el header sticky sigue funcionando. */
+    overflow-x: clip;
+  }
+}
+
+/*
+ * Vocabulario visual: papel, marcador y sticker. Todo lee de los tokens, así que
+ * sigue al tema sin una sola referencia a un color literal.
+ *
+ * Regla de la casa: nada de esto brilla. Sin blur de color, sin degradados de
+ * luz, sin text-shadow. Las sombras son sólidas y opacas, como tinta.
+ */
+
+/*
+ * Trazo de resaltador detrás del texto. Va con pseudo-elemento y no con
+ * background-size en `em`: los porcentajes se miden contra la caja real, así que
+ * el trazo cae bien tanto en un titular en mayúsculas como en texto corrido.
+ * Se pasa de los bordes y va apenas torcido, como pasado a mano.
+ */
+@utility highlight {
+  position: relative;
+  isolation: isolate;
+  /* Inline-block para que el trazo no se parta al cambiar de renglón: si no entra,
+     la frase entera baja de línea en vez de dejar medio resaltado colgando. */
+  display: inline-block;
+  /* El texto queda sobre el verde, así que va con su par y no con el del papel.
+     Sin esto, en tema oscuro hereda el crema y no se lee. */
+  color: var(--primary-foreground);
+  &::before {
+    content: "";
+    position: absolute;
+    /* Insets negativos: el trazo se pasa del texto por los cuatro lados. Si dejara
+       asomar una letra, en tema oscuro esa parte quedaría tinta sobre tinta. */
+    inset: -6% -0.12em -8% -0.12em;
+    z-index: -1;
+    background: var(--primary);
+    border-radius: 0.18em 0.5em 0.22em 0.4em;
+    transform: rotate(-0.8deg);
+  }
+}
+
+/* Sombra dura de sticker: bloque sólido desplazado, sin difuminar. */
+@utility shadow-hard {
+  box-shadow: 6px 6px 0 0 var(--foreground);
+}
+
+@utility shadow-hard-sm {
+  box-shadow: 3px 3px 0 0 var(--foreground);
+}
+
+/* Sombra dura en verde, para lo que ya tiene borde negro. */
+@utility shadow-hard-primary {
+  box-shadow: 6px 6px 0 0 var(--primary);
+}
+
+/* Subrayado a mano alzada, dibujado con un borde irregular. */
+@utility underline-scribble {
+  border-bottom: 3px solid var(--primary);
+  border-radius: 0 0 62% 38% / 0 0 90% 100%;
+}
+
+/* Mancha de marcador: bloque de color con las esquinas desparejas. */
+@utility blob {
+  border-radius: 62% 38% 55% 45% / 48% 62% 38% 52%;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
   }
 }
