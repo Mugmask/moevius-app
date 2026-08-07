@@ -1,0 +1,17 @@
+# Normalizamos todo a LF, en el repo y en el working tree.
+# Esto tiene que coincidir con `endOfLine: "lf"` del .prettierrc: si git
+# convirtiera a CRLF al clonar en Windows, Prettier marcaría todo el repo como
+# mal formateado.
+* text=auto eol=lf
+
+# Binarios: que git no los toque.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Lockfile: generado, no mostrarlo en los diffs de los PRs.
+pnpm-lock.yaml linguist-generated=true -diff
