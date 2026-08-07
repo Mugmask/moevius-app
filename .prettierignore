@@ -5,3 +5,7 @@ build
 .vercel
 pnpm-lock.yaml
 next-env.d.ts
+
+# Generados por la CLI de Supabase
+supabase/.temp
+src/lib/supabase/database.types.ts
