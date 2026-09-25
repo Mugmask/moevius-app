@@ -24,8 +24,16 @@ export const publicEnv = {
   get mpPublicKey() {
     return required("NEXT_PUBLIC_MP_PUBLIC_KEY", process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);
   },
-  /** URL pública del sitio, sin barra final. La usan MP (back_urls, webhook) y los mails. */
+  /**
+   * URL pública del sitio, sin barra final. La usan MP (back_urls, webhook), los
+   * mails y el QR, siempre del lado del server. En los previews de Vercel, si no está
+   * configurada, cae a la URL estable de la branch que expone Vercel.
+   */
   get siteUrl() {
-    return required("NEXT_PUBLIC_SITE_URL", process.env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "");
+    const branchUrl = process.env.VERCEL_BRANCH_URL && `https://${process.env.VERCEL_BRANCH_URL}`;
+    return required("NEXT_PUBLIC_SITE_URL", process.env.NEXT_PUBLIC_SITE_URL || branchUrl).replace(
+      /\/$/,
+      "",
+    );
   },
 };

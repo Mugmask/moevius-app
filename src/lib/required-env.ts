@@ -18,6 +18,21 @@ export const REQUIRED_ENV = [
   "EMAIL_FROM",
 ] as const;
 
-export function missingRequiredEnv(env: NodeJS.ProcessEnv = process.env) {
-  return REQUIRED_ENV.filter((name) => !env[name]);
+/**
+ * En los previews de Vercel estas no hacen falta: la URL sale de `VERCEL_BRANCH_URL`
+ * y sin Resend el mail falla y queda logueado (las entradas se ven igual en la web).
+ */
+const OPTIONAL_IN_PREVIEW: readonly string[] = [
+  "NEXT_PUBLIC_SITE_URL",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+];
+
+export function missingRequiredEnv({
+  env = process.env,
+  preview = false,
+}: { env?: NodeJS.ProcessEnv; preview?: boolean } = {}) {
+  return REQUIRED_ENV.filter(
+    (name) => !env[name] && !(preview && OPTIONAL_IN_PREVIEW.includes(name)),
+  );
 }

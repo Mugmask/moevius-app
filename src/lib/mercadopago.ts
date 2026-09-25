@@ -53,7 +53,7 @@ export async function createPreference({ orderId, expiresAt, buyer, items }: Pre
         identification: { type: "DNI", number: buyer.dni },
       },
       external_reference: orderId,
-      notification_url: `${site}/api/webhooks/mercadopago`,
+      notification_url: webhookUrl(site),
       back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
       // MP rechaza auto_return si la URL de vuelta no es https (ej. localhost).
       ...(site.startsWith("https://") && { auto_return: "approved" }),
@@ -75,6 +75,18 @@ export async function createPreference({ orderId, expiresAt, buyer, items }: Pre
     throw new Error("Mercado Pago no devolvió la preferencia");
   }
   return { id: preference.id };
+}
+
+/**
+ * En los previews de Vercel la protección de deploys le devolvería 401 a MP. Si el
+ * proyecto tiene "Protection Bypass for Automation", Vercel expone el secreto en
+ * `VERCEL_AUTOMATION_BYPASS_SECRET` y va en la URL para que el webhook pase.
+ */
+function webhookUrl(site: string) {
+  const url = new URL(`${site}/api/webhooks/mercadopago`);
+  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  if (bypass) url.searchParams.set("x-vercel-protection-bypass", bypass);
+  return url.toString();
 }
 
 export function getPayment(id: string) {
