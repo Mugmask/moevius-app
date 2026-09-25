@@ -7,13 +7,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Todas las rutas salvo:
-     * - _next/static, _next/image
-     * - favicon.ico
-     * - archivos de imagen
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
-  ],
+  /*
+   * Solo las rutas con sesión (staff). Los compradores nunca se loguean: refrescar
+   * la sesión en la landing o el checkout era un viaje a Supabase Auth por visita
+   * sin ningún beneficio.
+   */
+  matcher: ["/admin/:path*", "/door/:path*", "/auth/:path*"],
 };
