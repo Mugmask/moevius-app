@@ -95,9 +95,20 @@ Creá una API key en [Resend](https://resend.com) (`RESEND_API_KEY`) y verificá
 
 ### 🚪 Staff
 
-1. En el dashboard de Supabase: **Authentication → Users → Add user** con el mail de la persona.
-2. En la tabla `staff`, una fila con su `user_id` y `role`: `admin` ve `/admin` (ventas, reenvío de mails) y la puerta; `door` solo `/door`.
-3. Entra desde `/admin/login` con un link mágico. En **Authentication → URL Configuration** tiene que estar permitida `https://<tu-dominio>/auth/callback`.
+El staff entra en `/admin/login` con **mail y contraseña**. No hay registro ni recuperación por mail: las cuentas las damos de alta nosotros.
+
+```bash
+# Crea la cuenta (o le cambia la contraseña) y le asigna el rol
+pnpm staff:set persona@mail.com admin <contraseña>
+pnpm staff:set puerta@mail.com door <contraseña>
+
+# Le saca el acceso
+pnpm staff:set persona@mail.com remove
+```
+
+- `admin` ve `/admin` (ventas, órdenes, reenvío de mails) y la puerta; `door` solo `/door`.
+- El script usa las credenciales de `.env.local`: actúa sobre la DB a la que apunta ese archivo.
+- Conviene apagar **Authentication → Sign In / Providers → Allow new users to sign up** en Supabase: nadie necesita registrarse solo.
 
 ## 🔍 Linting de código y formateo
 

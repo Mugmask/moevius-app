@@ -15,7 +15,7 @@
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/database.types.ts",
     "db:push": "supabase db push && pnpm db:types",
     "prepare": "husky",
-    "staff:link": "node --env-file=.env.local scripts/staff-login-link.mjs"
+    "staff:set": "node --env-file=.env.local scripts/staff-set.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
