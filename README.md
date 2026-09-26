@@ -64,6 +64,41 @@ pnpm db:push
 
 `db:push` aplica lo que esté pendiente y regenera `src/lib/supabase/database.types.ts`, que es lo que le da tipos a las queries. Ese archivo **va commiteado**: el CI no tiene link para generarlo.
 
+## 🎟️ Venta de entradas
+
+```
+/events/[slug] ──► create_order (reserva cupo 15 min) ──► Wallet Brick ──► Checkout Pro
+                                                                  │
+            /orders/[orderId] ◄── vuelve el comprador ◄───────────┤
+                                                                  ▼
+                          /api/webhooks/mercadopago ──► fulfill_order (emite entradas) ──► mail con QR (Resend)
+                                                                                                │
+                                        /door/[slug] ──► check_in ◄── escanea ◄── /tickets/[code]
+```
+
+- **Fechas y lotes** se cargan desde el dashboard de Supabase: una fila en `events` (con `status = 'published'` para que aparezca) y al menos una en `ticket_types` (precio en pesos, cupo). Varios lotes por fecha (Preventa 1, General…) ya están soportados.
+- **El cupo** se descuenta al crear la orden y se libera solo si no se paga en 15 minutos. Todo pasa por funciones de Postgres (`create_order`, `fulfill_order`, `check_in`) que bloquean filas, así no hay sobreventa ni doble ingreso.
+- **Antiabuso**: una reserva pendiente por mail y fecha (la nueva reemplaza a la anterior), máximo 3 pendientes por IP y fecha, y [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) en el form si están `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY`.
+- **Reembolsos y contracargos**: cuando MP notifica un pago `refunded` o `charged_back`, la orden pasa a reembolsada y sus entradas quedan anuladas (en la puerta dan "Entrada anulada"). Un reembolso **parcial** no anula nada: queda logueado para resolverlo a mano.
+- **Órdenes y entradas** no se leen desde el cliente: el server usa la secret key y el staff logueado las ve por RLS.
+
+### 💳 Mercado Pago
+
+1. En [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) creá una app de Checkout Pro y copiá el **Access Token** a `MP_ACCESS_TOKEN` y la **Public Key** a `NEXT_PUBLIC_MP_PUBLIC_KEY` (la usa el Wallet Brick del front). En desarrollo usá las credenciales de prueba y [cuentas de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/your-integrations/test/accounts) para pagar.
+2. En **Webhooks** configurá la URL `https://<tu-dominio>/api/webhooks/mercadopago`, evento **Pagos** (cubre creación y actualización: así llegan también los reembolsos y contracargos), y copiá la clave secreta a `MP_WEBHOOK_SECRET`.
+
+El webhook necesita una URL pública, así que el flujo completo se prueba en un deploy de preview. En local, al volver de MP la página `/orders/[orderId]` confirma el pago igual consultándolo a la API.
+
+### ✉️ Resend
+
+Creá una API key en [Resend](https://resend.com) (`RESEND_API_KEY`) y verificá el dominio del remitente que pongas en `EMAIL_FROM`.
+
+### 🚪 Staff
+
+1. En el dashboard de Supabase: **Authentication → Users → Add user** con el mail de la persona.
+2. En la tabla `staff`, una fila con su `user_id` y `role`: `admin` ve `/admin` (ventas, reenvío de mails) y la puerta; `door` solo `/door`.
+3. Entra desde `/admin/login` con un link mágico. En **Authentication → URL Configuration** tiene que estar permitida `https://<tu-dominio>/auth/callback`.
+
 ## 🔍 Linting de código y formateo
 
 - Utilizamos Prettier y ESLint para mantener orden y clean code, consistente y libre de malas prácticas.
