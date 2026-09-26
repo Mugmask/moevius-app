@@ -71,7 +71,7 @@ pnpm db:push
                                                                   │
             /orders/[orderId] ◄── vuelve el comprador ◄───────────┤
                                                                   ▼
-                          /api/webhooks/mercadopago ──► fulfill_order (emite entradas) ──► mail con QR (Resend)
+                          /api/webhooks/mercadopago ──► fulfill_order (emite entradas) ──► mail con QR (SMTP)
                                                                                                 │
                                         /door/[slug] ──► check_in ◄── escanea ◄── /tickets/[code]
 ```
@@ -89,9 +89,15 @@ pnpm db:push
 
 El webhook necesita una URL pública, así que el flujo completo se prueba en un deploy de preview. En local, al volver de MP la página `/orders/[orderId]` confirma el pago igual consultándolo a la API.
 
-### ✉️ Resend
+### ✉️ Mails
 
-Creá una API key en [Resend](https://resend.com) (`RESEND_API_KEY`) y verificá el dominio del remitente que pongas en `EMAIL_FROM`.
+Los mails de entradas salen por **SMTP** (`nodemailer`), así que el proveedor se cambia solo con variables. Hoy es Gmail:
+
+1. Una cuenta de Gmail para el sitio, con **verificación en 2 pasos** activada.
+2. Una [contraseña de aplicación](https://myaccount.google.com/apppasswords) → `SMTP_PASS`.
+3. `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER` y `EMAIL_FROM` con esa misma cuenta.
+
+Gmail permite unos 500 destinatarios por día. Para pasar a Resend, Brevo o SES con dominio propio alcanza con cambiar las `SMTP_*`.
 
 ### 🚪 Staff
 

@@ -13,10 +13,20 @@ export const serverEnv = {
   get mpWebhookSecret() {
     return required("MP_WEBHOOK_SECRET", process.env.MP_WEBHOOK_SECRET);
   },
-  get resendApiKey() {
-    return required("RESEND_API_KEY", process.env.RESEND_API_KEY);
+  /** SMTP para los mails de entradas. Con Gmail: smtp.gmail.com, 465 y contraseña de aplicación. */
+  get smtpHost() {
+    return required("SMTP_HOST", process.env.SMTP_HOST);
   },
-  /** Ej: "Moevius <entradas@moevius.app>". El dominio tiene que estar verificado en Resend. */
+  get smtpPort() {
+    return Number(required("SMTP_PORT", process.env.SMTP_PORT));
+  },
+  get smtpUser() {
+    return required("SMTP_USER", process.env.SMTP_USER);
+  },
+  get smtpPass() {
+    return required("SMTP_PASS", process.env.SMTP_PASS);
+  },
+  /** Ej: "Moevius <moevius.entradas@gmail.com>". Con Gmail tiene que ser la misma cuenta que SMTP_USER. */
   get emailFrom() {
     return required("EMAIL_FROM", process.env.EMAIL_FROM);
   },
