@@ -1,8 +1,13 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
-
-import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
+import {
+  InvalidWebhookSignatureError,
+  MercadoPagoConfig,
+  MPNotFoundError,
+  Payment,
+  Preference,
+  WebhookSignatureValidator,
+} from "mercadopago";
 
 import { serverEnv } from "@/lib/env.server";
 import { publicEnv } from "@/lib/supabase/env";
@@ -89,16 +94,25 @@ function webhookUrl(site: string) {
   return url.toString();
 }
 
-export function getPayment(id: string) {
-  return new Payment(config()).get({ id });
+/** El pago según MP, o null si MP dice que no existe (ej. una notificación simulada). */
+export async function getPayment(id: string) {
+  try {
+    return await new Payment(config()).get({ id });
+  } catch (err) {
+    if (err instanceof MPNotFoundError) return null;
+    throw err;
+  }
 }
 
+export type WebhookSignatureCheck = { valid: true } | { valid: false; reason: string };
+
 /**
- * Valida el header `x-signature` de un webhook de MP.
- * Manifest: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`, firmado con HMAC-SHA256.
+ * Valida el header `x-signature` de un webhook con el validador oficial del SDK.
+ * Devuelve el motivo del rechazo para loguearlo (ej. `SignatureMismatch` = el
+ * secreto no es el de la app que mandó la notificación).
  * https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
  */
-export function verifyWebhookSignature({
+export function checkWebhookSignature({
   signature,
   requestId,
   dataId,
@@ -106,23 +120,31 @@ export function verifyWebhookSignature({
   signature: string | null;
   requestId: string | null;
   dataId: string;
-}) {
-  if (!signature || !requestId) return false;
+}): WebhookSignatureCheck {
+  try {
+    WebhookSignatureValidator.validate({
+      xSignature: signature,
+      xRequestId: requestId,
+      // MP pide pasar el id a minúsculas si es alfanumérico.
+      dataId: dataId.toLowerCase(),
+      secret: serverEnv.mpWebhookSecret,
+    });
+    return { valid: true };
+  } catch (err) {
+    if (err instanceof InvalidWebhookSignatureError) return { valid: false, reason: err.reason };
+    throw err;
+  }
+}
 
-  const parts = Object.fromEntries(
-    signature.split(",").map((part) => {
-      const [key, ...value] = part.trim().split("=");
-      return [key, value.join("=")];
-    }),
-  );
-  const { ts, v1 } = parts;
-  if (!ts || !v1) return false;
-
-  // MP pide pasar el id a minúsculas si es alfanumérico.
-  const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${ts};`;
-  const expected = createHmac("sha256", serverEnv.mpWebhookSecret).update(manifest).digest("hex");
-
-  const a = Buffer.from(expected, "hex");
-  const b = Buffer.from(v1, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
+/**
+ * Si se aceptan notificaciones con firma inválida. Solo en previews de Vercel o en
+ * `next dev`, y solo con `MP_WEBHOOK_ALLOW_UNSIGNED=true`: con las credenciales de
+ * prueba MP firma con el secreto de la app del vendedor de test, no con el nuestro.
+ * Es seguro porque el webhook nunca confía en el body: relee el pago en la API de MP.
+ * En producción no aplica aunque la variable esté seteada por error.
+ */
+export function allowUnsignedWebhooks() {
+  const nonProduction =
+    process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development";
+  return nonProduction && process.env.MP_WEBHOOK_ALLOW_UNSIGNED === "true";
 }

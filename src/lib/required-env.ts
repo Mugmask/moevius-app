@@ -14,19 +14,18 @@ export const REQUIRED_ENV = [
   "SUPABASE_SECRET_KEY",
   "MP_ACCESS_TOKEN",
   "MP_WEBHOOK_SECRET",
-  "RESEND_API_KEY",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASS",
   "EMAIL_FROM",
 ] as const;
 
 /**
- * En los previews de Vercel estas no hacen falta: la URL sale de `VERCEL_BRANCH_URL`
- * y sin Resend el mail falla y queda logueado (las entradas se ven igual en la web).
+ * En los previews de Vercel la URL sale de `VERCEL_BRANCH_URL`. Todo lo demás es
+ * obligatorio también en preview: tiene que poder hacer lo mismo que producción.
  */
-const OPTIONAL_IN_PREVIEW: readonly string[] = [
-  "NEXT_PUBLIC_SITE_URL",
-  "RESEND_API_KEY",
-  "EMAIL_FROM",
-];
+const OPTIONAL_IN_PREVIEW: readonly string[] = ["NEXT_PUBLIC_SITE_URL"];
 
 export function missingRequiredEnv({
   env = process.env,

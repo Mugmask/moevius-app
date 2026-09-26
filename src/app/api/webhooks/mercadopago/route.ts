@@ -1,6 +1,6 @@
 import { after, type NextRequest } from "next/server";
 
-import { verifyWebhookSignature } from "@/lib/mercadopago";
+import { allowUnsignedWebhooks, checkWebhookSignature } from "@/lib/mercadopago";
 import { processPayment, sendTicketsEmail } from "@/lib/orders";
 
 /**
@@ -18,18 +18,27 @@ export async function POST(request: NextRequest) {
   const type = url.searchParams.get("type") ?? body?.type;
   const dataId = url.searchParams.get("data.id") ?? body?.data?.id?.toString();
 
-  // Otros tópicos (merchant_order, etc.) no nos interesan.
+  // Otros tópicos (merchant_order, etc.) y el formato IPN viejo (`topic`/`id`) no
+  // nos interesan: MP manda el mismo pago también en formato webhook.
   if (type !== "payment" || !dataId) {
     return new Response(null, { status: 200 });
   }
 
-  const valida = verifyWebhookSignature({
+  const requestId = request.headers.get("x-request-id");
+  const signature = checkWebhookSignature({
     signature: request.headers.get("x-signature"),
-    requestId: request.headers.get("x-request-id"),
+    requestId,
     dataId,
   });
-  if (!valida) {
-    return new Response("Firma inválida", { status: 401 });
+  if (!signature.valid) {
+    const allowed = allowUnsignedWebhooks();
+    console.warn("webhook mercadopago: firma inválida", {
+      paymentId: dataId,
+      requestId,
+      reason: signature.reason,
+      accepted: allowed,
+    });
+    if (!allowed) return new Response("Firma inválida", { status: 401 });
   }
 
   try {

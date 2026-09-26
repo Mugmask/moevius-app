@@ -71,7 +71,7 @@ pnpm db:push
                                                                   │
             /orders/[orderId] ◄── vuelve el comprador ◄───────────┤
                                                                   ▼
-                          /api/webhooks/mercadopago ──► fulfill_order (emite entradas) ──► mail con QR (Resend)
+                          /api/webhooks/mercadopago ──► fulfill_order (emite entradas) ──► mail con QR (SMTP)
                                                                                                 │
                                         /door/[slug] ──► check_in ◄── escanea ◄── /tickets/[code]
 ```
@@ -89,15 +89,32 @@ pnpm db:push
 
 El webhook necesita una URL pública, así que el flujo completo se prueba en un deploy de preview. En local, al volver de MP la página `/orders/[orderId]` confirma el pago igual consultándolo a la API.
 
-### ✉️ Resend
+### ✉️ Mails
 
-Creá una API key en [Resend](https://resend.com) (`RESEND_API_KEY`) y verificá el dominio del remitente que pongas en `EMAIL_FROM`.
+Los mails de entradas salen por **SMTP** (`nodemailer`), así que el proveedor se cambia solo con variables. Hoy es Gmail:
+
+1. Una cuenta de Gmail para el sitio, con **verificación en 2 pasos** activada.
+2. Una [contraseña de aplicación](https://myaccount.google.com/apppasswords) → `SMTP_PASS`.
+3. `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER` y `EMAIL_FROM` con esa misma cuenta.
+
+Gmail permite unos 500 destinatarios por día. Para pasar a Resend, Brevo o SES con dominio propio alcanza con cambiar las `SMTP_*`.
 
 ### 🚪 Staff
 
-1. En el dashboard de Supabase: **Authentication → Users → Add user** con el mail de la persona.
-2. En la tabla `staff`, una fila con su `user_id` y `role`: `admin` ve `/admin` (ventas, reenvío de mails) y la puerta; `door` solo `/door`.
-3. Entra desde `/admin/login` con un link mágico. En **Authentication → URL Configuration** tiene que estar permitida `https://<tu-dominio>/auth/callback`.
+El staff entra en `/admin/login` con **mail y contraseña**. No hay registro ni recuperación por mail: las cuentas las damos de alta nosotros.
+
+```bash
+# Crea la cuenta (o le cambia la contraseña) y le asigna el rol
+pnpm staff:set persona@mail.com admin <contraseña>
+pnpm staff:set puerta@mail.com door <contraseña>
+
+# Le saca el acceso
+pnpm staff:set persona@mail.com remove
+```
+
+- `admin` ve `/admin` (ventas, órdenes, reenvío de mails) y la puerta; `door` solo `/door`.
+- El script usa las credenciales de `.env.local`: actúa sobre la DB a la que apunta ese archivo.
+- Conviene apagar **Authentication → Sign In / Providers → Allow new users to sign up** en Supabase: nadie necesita registrarse solo.
 
 ## 🔍 Linting de código y formateo
 

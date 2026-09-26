@@ -12,5 +12,5 @@ export const config = {
    * la sesión en la landing o el checkout era un viaje a Supabase Auth por visita
    * sin ningún beneficio.
    */
-  matcher: ["/admin/:path*", "/door/:path*", "/auth/:path*"],
+  matcher: ["/admin/:path*", "/door/:path*"],
 };

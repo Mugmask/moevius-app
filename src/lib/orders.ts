@@ -1,11 +1,10 @@
 import "server-only";
 
 import { render } from "react-email";
-import { Resend } from "resend";
 
 import { TicketEmail } from "@/emails/ticket-email";
-import { serverEnv } from "@/lib/env.server";
 import { formatEventDates } from "@/lib/events";
+import { sendMail } from "@/lib/mailer";
 import { getPayment } from "@/lib/mercadopago";
 import { qrPng, ticketUrl } from "@/lib/qr";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -62,6 +61,11 @@ export async function processPayment(paymentId: string): Promise<{
   justPaid?: boolean;
 }> {
   const payment = await getPayment(paymentId);
+  if (!payment) {
+    // No es un error nuestro: reintentar no lo arregla (ej. notificación simulada).
+    console.warn("processPayment: MP no conoce el pago", { paymentId });
+    return { status: "payment_not_found" };
+  }
   const orderId = payment.external_reference;
 
   if (orderId && payment.status && REFUND_STATUSES.has(payment.status)) {
@@ -175,26 +179,22 @@ export async function sendTicketsEmail(orderId: string) {
     }),
   );
 
-  const attachments = await Promise.all(
+  const inlineImages = await Promise.all(
     tickets.map(async (t) => ({
+      cid: t.cid,
       filename: `entrada-${t.cid}.png`,
       content: await qrPng(t.code),
-      contentId: t.cid,
     })),
   );
 
-  const { error } = await new Resend(serverEnv.resendApiKey).emails.send(
-    {
-      from: serverEnv.emailFrom,
-      to: order.buyer_email,
-      subject: `Tus entradas para Moevius ${day} ${month}`,
-      html,
-      attachments,
-    },
-    // Si MP reintenta y justo se cruzan dos envíos, Resend descarta el duplicado.
-    { idempotencyKey: `tickets/${order.id}/${order.email_sent_at ?? "primero"}` },
-  );
-  if (error) throw new Error(`Resend: ${error.message}`);
+  // No hace falta deduplicar: solo manda quien recibió `justPaid` (una vez por orden)
+  // o el admin a mano desde /admin.
+  await sendMail({
+    to: order.buyer_email,
+    subject: `Tus entradas para Moevius ${day} ${month}`,
+    html,
+    inlineImages,
+  });
 
   await createAdminClient()
     .from("orders")
