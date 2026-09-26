@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
       <div className="border-foreground bg-card shadow-hard w-full max-w-sm rounded-3xl border-2 p-8">
         <h1 className="font-display text-3xl tracking-tight uppercase">Staff</h1>
         <p className="text-muted-foreground mt-2 text-sm font-medium">
-          Te mandamos un link al mail para entrar. Solo funciona con mails dados de alta.
+          Entrá con tu mail y contraseña. Solo funciona con cuentas de staff dadas de alta.
         </p>
         {error && (
           <p role="alert" className="bg-muted mt-4 rounded-2xl px-4 py-3 text-sm font-bold">
