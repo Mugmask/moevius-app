@@ -62,6 +62,11 @@ export async function processPayment(paymentId: string): Promise<{
   justPaid?: boolean;
 }> {
   const payment = await getPayment(paymentId);
+  if (!payment) {
+    // No es un error nuestro: reintentar no lo arregla (ej. notificación simulada).
+    console.warn("processPayment: MP no conoce el pago", { paymentId });
+    return { status: "payment_not_found" };
+  }
   const orderId = payment.external_reference;
 
   if (orderId && payment.status && REFUND_STATUSES.has(payment.status)) {
