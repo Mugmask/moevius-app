@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import { Field, Pill } from "@/components/brand";
-import { MpWallet } from "@/components/mp-wallet";
+import { MpPayButton } from "@/components/mp-pay-button";
 import { Turnstile } from "@/components/turnstile";
 import type { TicketTier } from "@/lib/events";
 import { TIME_FORMAT, PRICE_FORMAT } from "@/lib/format";
@@ -108,6 +108,11 @@ export function CheckoutForm({ tiers, action }: Props) {
         name="dni"
         label="DNI"
         inputMode="numeric"
+        autoComplete="off"
+        // Lo mismo que acepta el server: 7 u 8 números, con o sin puntos.
+        pattern="[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}"
+        maxLength={10}
+        title="7 u 8 números, con o sin puntos."
         required
         defaultValue={state.values?.dni}
       />
@@ -136,7 +141,7 @@ export function CheckoutForm({ tiers, action }: Props) {
   );
 }
 
-/** Segundo paso: la reserva ya está hecha y se paga con el Wallet Brick de MP. */
+/** Segundo paso: la reserva ya está hecha y se paga en el checkout de MP. */
 function PaymentStep({ reservation }: { reservation: CheckoutReservation }) {
   return (
     <div className="flex flex-col gap-5">
@@ -157,7 +162,7 @@ function PaymentStep({ reservation }: { reservation: CheckoutReservation }) {
         dinero en cuenta o transferencia desde Mercado Pago.
       </p>
 
-      <MpWallet preferenceId={reservation.preferenceId} />
+      <MpPayButton checkoutUrl={reservation.checkoutUrl} />
     </div>
   );
 }

@@ -20,12 +20,8 @@ export const publicEnv = {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     );
   },
-  /** Public Key de Mercado Pago: la usa el Wallet Brick en el navegador. */
-  get mpPublicKey() {
-    return required("NEXT_PUBLIC_MP_PUBLIC_KEY", process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);
-  },
   /**
-   * URL pública del sitio, sin barra final. La usan MP (back_urls, webhook), los
+   * URL pública del sitio, sin barra final. La usan MP (URLs de vuelta), los
    * mails y el QR, siempre del lado del server. En los previews de Vercel, si no está
    * configurada, cae a la URL estable de la branch que expone Vercel.
    */

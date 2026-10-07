@@ -125,8 +125,13 @@ export type Database = {
           event_id: string
           expires_at: string
           id: string
+          mp_checkout_url: string | null
+          mp_order_id: string | null
+          mp_payment_detail: string | null
           mp_payment_id: string | null
           mp_preference_id: string | null
+          mp_status: string | null
+          mp_synced_at: string | null
           paid_at: string | null
           status: Database["public"]["Enums"]["order_status"]
           total: number
@@ -141,8 +146,13 @@ export type Database = {
           event_id: string
           expires_at: string
           id?: string
+          mp_checkout_url?: string | null
+          mp_order_id?: string | null
+          mp_payment_detail?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
+          mp_status?: string | null
+          mp_synced_at?: string | null
           paid_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
@@ -157,8 +167,13 @@ export type Database = {
           event_id?: string
           expires_at?: string
           id?: string
+          mp_checkout_url?: string | null
+          mp_order_id?: string | null
+          mp_payment_detail?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
+          mp_status?: string | null
+          mp_synced_at?: string | null
           paid_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
@@ -219,6 +234,7 @@ export type Database = {
           sales_end: string | null
           sales_start: string | null
           sort_order: number
+          taken: number
         }
         Insert: {
           active?: boolean
@@ -232,6 +248,7 @@ export type Database = {
           sales_end?: string | null
           sales_start?: string | null
           sort_order?: number
+          taken?: number
         }
         Update: {
           active?: boolean
@@ -245,6 +262,7 @@ export type Database = {
           sales_end?: string | null
           sales_start?: string | null
           sort_order?: number
+          taken?: number
         }
         Relationships: [
           {
@@ -319,7 +337,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_taken: {
+        Args: { p_order_id: string; p_sign: number }
+        Returns: undefined
+      }
       check_in: { Args: { p_code: string; p_event_id: string }; Returns: Json }
+      claim_mp_sync: {
+        Args: { p_min_seconds: number; p_order_id: string }
+        Returns: boolean
+      }
       create_order: {
         Args: {
           p_buyer_dni: string
@@ -342,11 +368,21 @@ export type Database = {
           sold: number
         }[]
       }
+      expire_reservations: { Args: never; Returns: number }
       fulfill_order: {
         Args: { p_mp_payment_id: string; p_order_id: string }
-        Returns: boolean
+        Returns: string
       }
       is_staff: { Args: never; Returns: boolean }
+      mark_refunded: {
+        Args: { p_mp_payment_id: string; p_order_id: string }
+        Returns: undefined
+      }
+      order_holds_capacity: {
+        Args: { p_status: Database["public"]["Enums"]["order_status"] }
+        Returns: boolean
+      }
+      recount_taken: { Args: never; Returns: undefined }
       ticket_availability: {
         Args: never
         Returns: {
@@ -363,7 +399,13 @@ export type Database = {
     }
     Enums: {
       event_status: "draft" | "published" | "archived"
-      order_status: "pending" | "paid" | "expired" | "cancelled" | "refunded"
+      order_status:
+        | "pending"
+        | "paid"
+        | "expired"
+        | "cancelled"
+        | "refunded"
+        | "needs_refund"
       staff_role: "admin" | "door"
       ticket_status: "valid" | "used" | "void"
     }
@@ -497,7 +539,14 @@ export const Constants = {
   public: {
     Enums: {
       event_status: ["draft", "published", "archived"],
-      order_status: ["pending", "paid", "expired", "cancelled", "refunded"],
+      order_status: [
+        "pending",
+        "paid",
+        "expired",
+        "cancelled",
+        "refunded",
+        "needs_refund",
+      ],
       staff_role: ["admin", "door"],
       ticket_status: ["valid", "used", "void"],
     },

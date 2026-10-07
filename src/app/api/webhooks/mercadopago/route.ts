@@ -1,12 +1,14 @@
 import { after, type NextRequest } from "next/server";
 
-import { allowUnsignedWebhooks, checkWebhookSignature } from "@/lib/mercadopago";
-import { processPayment, sendTicketsEmail } from "@/lib/orders";
+import { checkWebhookSignature } from "@/lib/mercadopago";
+import { processMpOrder, sendTicketsEmailWithRetry } from "@/lib/orders";
 
 /**
- * Notificaciones de Mercado Pago. Las entradas se emiten antes de responder: si
- * algo falla devolvemos 500 y MP reintenta (`fulfill_order` es idempotente). El
- * mail va en `after()` para no demorar la respuesta; si falla se reenvía desde /admin.
+ * Notificaciones de Mercado Pago (evento "Order", configurado en el panel de la app:
+ * la API de Orders no acepta una URL por orden). Las entradas se emiten antes de
+ * responder: si algo falla devolvemos 500 y MP reintenta (`fulfill_order` es
+ * idempotente). El mail va en `after()` para no demorar la respuesta, con reintentos;
+ * si igual falla, el admin la marca para reenviar.
  */
 export async function POST(request: NextRequest) {
   const url = request.nextUrl;
@@ -18,9 +20,9 @@ export async function POST(request: NextRequest) {
   const type = url.searchParams.get("type") ?? body?.type;
   const dataId = url.searchParams.get("data.id") ?? body?.data?.id?.toString();
 
-  // Otros tópicos (merchant_order, etc.) y el formato IPN viejo (`topic`/`id`) no
-  // nos interesan: MP manda el mismo pago también en formato webhook.
-  if (type !== "payment" || !dataId) {
+  // Otros tópicos (payment, merchant_order, etc.) no nos interesan: todo lo que
+  // necesitamos está en la orden de MP.
+  if (type !== "order" || !dataId) {
     return new Response(null, { status: 200 });
   }
 
@@ -31,27 +33,21 @@ export async function POST(request: NextRequest) {
     dataId,
   });
   if (!signature.valid) {
-    const allowed = allowUnsignedWebhooks();
     console.warn("webhook mercadopago: firma inválida", {
-      paymentId: dataId,
+      mpOrderId: dataId,
       requestId,
       reason: signature.reason,
-      accepted: allowed,
     });
-    if (!allowed) return new Response("Firma inválida", { status: 401 });
+    return new Response("Firma inválida", { status: 401 });
   }
 
   try {
-    const { orderId, justPaid } = await processPayment(dataId);
+    const { orderId, justPaid } = await processMpOrder(dataId);
     if (orderId && justPaid) {
-      after(() =>
-        sendTicketsEmail(orderId).catch((err) =>
-          console.error("sendTicketsEmail", { orderId, err }),
-        ),
-      );
+      after(() => sendTicketsEmailWithRetry(orderId));
     }
   } catch (err) {
-    console.error("webhook mercadopago", { paymentId: dataId, err });
+    console.error("webhook mercadopago", { mpOrderId: dataId, err });
     return new Response("Error procesando el pago", { status: 500 });
   }
 
