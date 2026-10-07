@@ -1,6 +1,6 @@
 "use client";
 
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { type IScannerError, Scanner } from "@yudiel/react-qr-scanner";
 import { useRef, useState, useTransition } from "react";
 
 import { Pill } from "@/components/brand";
@@ -18,6 +18,23 @@ const RESULT_MESSAGES: Record<CheckInResult["result"], string> = {
   error: "Error, probá de nuevo",
 };
 
+/** Sin cámara el staff ve un cuadro negro: le decimos por qué y que use la carga manual. */
+function cameraErrorMessage(error: IScannerError) {
+  switch (error.kind) {
+    case "permission-denied":
+    case "security":
+      return "No hay permiso para usar la cámara. Habilitalo en los ajustes del navegador y recargá.";
+    case "no-camera":
+      return "Este dispositivo no tiene cámara.";
+    case "in-use":
+      return "Otra app está usando la cámara. Cerrala y recargá.";
+    case "insecure-context":
+      return "La cámara solo funciona con https.";
+    default:
+      return "No se pudo abrir la cámara. Recargá la página.";
+  }
+}
+
 /** Cuánto queda en pantalla el resultado antes de volver a escanear. */
 const RESULT_DISPLAY_MS = 2500;
 
@@ -27,6 +44,7 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
   const [manualCode, setManualCode] = useState("");
   const timeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [checkIns, setCheckIns] = useState(0);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   function validate(value: string) {
     if (pending || result) return;
@@ -62,7 +80,16 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
           paused={Boolean(result) || pending}
           sound={false}
           constraints={{ facingMode: "environment" }}
+          onError={(error) => setCameraError(cameraErrorMessage(error))}
         />
+        {cameraError && (
+          <p
+            role="alert"
+            className="bg-foreground text-background absolute inset-0 flex items-center justify-center p-8 text-center font-bold"
+          >
+            {cameraError}
+          </p>
+        )}
       </div>
 
       <div className="mx-auto flex w-full max-w-md flex-col gap-4 p-4">
@@ -81,11 +108,17 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
             placeholder="O pegá el código"
-            className="border-foreground bg-card h-11 min-w-0 flex-1 rounded-full border-2 px-4 text-sm font-medium"
+            aria-label="Código de la entrada"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            // 16px: con menos, iOS hace zoom al tocar el input.
+            className="border-foreground bg-card h-12 min-w-0 flex-1 rounded-full border-2 px-4 text-base font-medium"
           />
           <button
             type="submit"
-            className="bg-foreground text-background rounded-full px-5 text-sm font-bold"
+            className="bg-foreground text-background h-12 rounded-full px-5 text-base font-bold"
           >
             Validar
           </button>
@@ -98,7 +131,9 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
           onClick={dismiss}
           className={cn(
             "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-8 text-center",
-            result.result === "ok" ? "bg-primary text-primary-foreground" : "bg-red-600 text-white",
+            result.result === "ok"
+              ? "bg-primary text-primary-foreground"
+              : "bg-destructive text-white",
           )}
         >
           <span className="font-display text-6xl leading-none uppercase">
