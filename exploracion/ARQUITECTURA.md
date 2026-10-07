@@ -27,6 +27,19 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
 - Probar migraciones en local antes del push: `npx supabase start -x studio,...` (Docker) y
   `npx supabase gen types typescript --local`.
 
+## Fechas de prueba y base compartida
+
+> 🔖 Sello: migración `20261007140000_test_events` · 2026-10-07
+
+- Staging y producción usan **el mismo Supabase**. `events.is_test` separa: producción solo fechas
+  reales, todo lo demás solo de prueba (`TEST_MODE` en `src/lib/environment.ts`, por `VERCEL_ENV`).
+- Además del filtro en la app, `create_order(p_test_mode)` rechaza (`event_unavailable`) una fecha
+  del otro modo: una compra de staging nunca ocupa cupo real. Toda query nueva sobre `events` que
+  liste o venda tiene que filtrar por `is_test = TEST_MODE`.
+- Queda el `create_order` viejo (sin `p_test_mode`) para el código deployado antes; borrarlo junto
+  con `orders.mp_preference_id` cuando producción use Orders.
+- Supabase local en puertos **544xx** (`supabase/config.toml`): otro proyecto (cashlist) usa 543xx.
+
 ## Mercado Pago (API de Orders)
 
 > 🔖 Sello: migración `20261007130000_mp_orders` · 2026-10-07
