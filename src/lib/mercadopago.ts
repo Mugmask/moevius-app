@@ -4,8 +4,7 @@ import {
   InvalidWebhookSignatureError,
   MercadoPagoConfig,
   MPNotFoundError,
-  Payment,
-  Preference,
+  Order,
   WebhookSignatureValidator,
 } from "mercadopago";
 
@@ -16,12 +15,19 @@ function config() {
   return new MercadoPagoConfig({ accessToken: serverEnv.mpAccessToken });
 }
 
-type PreferenceInput = {
+// Un `Order` nuevo por llamada: el SDK guarda los `requestOptions` (la clave de
+// idempotencia) en la instancia y los arrastraría a la siguiente orden.
+function orders() {
+  return new Order(config());
+}
+
+type CheckoutInput = {
   orderId: string;
-  expiresAt: string;
+  /** El total de la orden en la DB (precio congelado por create_order). */
+  total: number;
+  reservationMinutes: number;
   buyer: { firstName: string; lastName: string; email: string; dni: string };
   items: {
-    id: string;
     title: string;
     description: string;
     quantity: number;
@@ -30,78 +36,95 @@ type PreferenceInput = {
   }[];
 };
 
-/**
- * Crea la preferencia de Checkout Pro. Los campos siguen el checklist de calidad de
- * MP y los datos de industria "Tickets y entretenimiento" (category_id, event_date,
- * datos del comprador): mejoran la tasa de aprobación.
- */
-export async function createPreference({ orderId, expiresAt, buyer, items }: PreferenceInput) {
-  const site = publicEnv.siteUrl;
-  const returnUrl = `${site}/orders/${orderId}`;
+const amount = (pesos: number) => pesos.toFixed(2);
 
-  const preference = await new Preference(config()).create({
+/**
+ * Crea la orden de Checkout Pro (API de Orders) y devuelve a dónde mandar al
+ * comprador. Los campos siguen el checklist de calidad de MP y los datos de industria
+ * "Tickets y entretenimiento" (category_id, event_date, datos del comprador).
+ *
+ * El webhook no se puede pasar por orden: se configura en el panel de la app de MP
+ * (evento "Order"). La página de la orden igual consulta a MP, así que la compra
+ * se completa aunque el webhook no llegue (ej. en un preview).
+ */
+export async function createCheckout({
+  orderId,
+  total,
+  reservationMinutes,
+  buyer,
+  items,
+}: CheckoutInput) {
+  const returnUrl = `${publicEnv.siteUrl}/orders/${orderId}`;
+
+  const order = await orders().create({
     body: {
+      type: "online",
+      processing_mode: "manual",
+      external_reference: orderId,
+      total_amount: amount(total),
+      // Lo mismo que la reserva. MP no corta el pago justo a tiempo: si llega tarde,
+      // fulfill_order re-chequea el cupo.
+      expiration_time: `PT${reservationMinutes}M`,
+      payer: {
+        email: buyer.email,
+        first_name: buyer.firstName,
+        last_name: buyer.lastName,
+        identification: { type: "DNI", number: buyer.dni },
+      },
+      // Sin external_code: MP lo limita a 30 caracteres y los ids de lote son UUIDs.
       items: items.map((item) => ({
-        id: item.id,
         title: item.title,
         description: item.description,
         category_id: "tickets",
         event_date: item.eventDate,
         quantity: item.quantity,
-        unit_price: item.unitPrice,
-        currency_id: "ARS",
+        unit_price: amount(item.unitPrice),
       })),
-      payer: {
-        name: buyer.firstName,
-        surname: buyer.lastName,
-        email: buyer.email,
-        identification: { type: "DNI", number: buyer.dni },
+      config: {
+        statement_descriptor: "MOEVIUS",
+        online: {
+          success_url: returnUrl,
+          pending_url: returnUrl,
+          failure_url: returnUrl,
+          // MP rechaza auto_return si la URL de vuelta no es https (ej. localhost).
+          ...(returnUrl.startsWith("https://") && { auto_return: "approved" }),
+          // Si rechazan la tarjeta, que pueda probar con otra en el mismo checkout (sin
+          // esto el primer rechazo cierra la orden de MP).
+          retries: { allowed: true },
+        },
+        // Efectivo (Rapipago, Pago Fácil) queda pendiente días: no encaja con una
+        // reserva de minutos.
+        payment_method: { not_allowed_types: ["ticket", "atm"] },
       },
-      external_reference: orderId,
-      notification_url: webhookUrl(site),
-      back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
-      // MP rechaza auto_return si la URL de vuelta no es https (ej. localhost).
-      ...(site.startsWith("https://") && { auto_return: "approved" }),
-      // La reserva de cupo dura lo mismo que la preferencia.
-      expires: true,
-      expiration_date_to: expiresAt,
-      // Efectivo (Rapipago, Pago Fácil) queda pendiente días: no encaja con una
-      // reserva de minutos.
-      payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
-      // Aprobado o rechazado al instante, sin estados "en proceso" que puedan
-      // resolverse después de que venció la reserva.
-      binary_mode: true,
-      statement_descriptor: "MOEVIUS",
     },
+    // La misma orden nuestra nunca crea dos órdenes en MP.
     requestOptions: { idempotencyKey: orderId },
   });
 
-  if (!preference.id) {
-    throw new Error("Mercado Pago no devolvió la preferencia");
+  if (!order.id || !order.checkout_url) {
+    throw new Error("Mercado Pago no devolvió la orden");
   }
-  return { id: preference.id };
+  return { id: order.id, checkoutUrl: order.checkout_url };
 }
 
-/**
- * En los previews de Vercel la protección de deploys le devolvería 401 a MP. Si el
- * proyecto tiene "Protection Bypass for Automation", Vercel expone el secreto en
- * `VERCEL_AUTOMATION_BYPASS_SECRET` y va en la URL para que el webhook pase.
- */
-function webhookUrl(site: string) {
-  const url = new URL(`${site}/api/webhooks/mercadopago`);
-  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  if (bypass) url.searchParams.set("x-vercel-protection-bypass", bypass);
-  return url.toString();
-}
-
-/** El pago según MP, o null si MP dice que no existe (ej. una notificación simulada). */
-export async function getPayment(id: string) {
+/** La orden según MP, o null si MP dice que no existe (ej. una notificación simulada). */
+export async function getMpOrder(id: string) {
   try {
-    return await new Payment(config()).get({ id });
+    return await orders().get({ id });
   } catch (err) {
     if (err instanceof MPNotFoundError) return null;
     throw err;
   }
+}
+
+export type MpOrder = NonNullable<Awaited<ReturnType<typeof getMpOrder>>>;
+
+/**
+ * Reembolsa la orden de MP completa. La clave de idempotencia es por orden: si el
+ * webhook se reintenta, MP no reembolsa dos veces.
+ */
+export async function refundMpOrder(id: string) {
+  return orders().refund({ id, requestOptions: { idempotencyKey: `refund-${id}` } });
 }
 
 export type WebhookSignatureCheck = { valid: true } | { valid: false; reason: string };
@@ -109,8 +132,9 @@ export type WebhookSignatureCheck = { valid: true } | { valid: false; reason: st
 /**
  * Valida el header `x-signature` de un webhook con el validador oficial del SDK.
  * Devuelve el motivo del rechazo para loguearlo (ej. `SignatureMismatch` = el
- * secreto no es el de la app que mandó la notificación).
- * https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+ * secreto no es el de la app que mandó la notificación: con credenciales de prueba
+ * es el de la app del vendedor de test).
+ * https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-orders/notifications
  */
 export function checkWebhookSignature({
   signature,
@@ -125,7 +149,8 @@ export function checkWebhookSignature({
     WebhookSignatureValidator.validate({
       xSignature: signature,
       xRequestId: requestId,
-      // MP pide pasar el id a minúsculas si es alfanumérico.
+      // MP pide pasar el id a minúsculas (los de Orders vienen como ORD…) y el SDK
+      // no lo hace.
       dataId: dataId.toLowerCase(),
       secret: serverEnv.mpWebhookSecret,
     });
@@ -134,17 +159,4 @@ export function checkWebhookSignature({
     if (err instanceof InvalidWebhookSignatureError) return { valid: false, reason: err.reason };
     throw err;
   }
-}
-
-/**
- * Si se aceptan notificaciones con firma inválida. Solo en previews de Vercel o en
- * `next dev`, y solo con `MP_WEBHOOK_ALLOW_UNSIGNED=true`: con las credenciales de
- * prueba MP firma con el secreto de la app del vendedor de test, no con el nuestro.
- * Es seguro porque el webhook nunca confía en el body: relee el pago en la API de MP.
- * En producción no aplica aunque la variable esté seteada por error.
- */
-export function allowUnsignedWebhooks() {
-  const nonProduction =
-    process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development";
-  return nonProduction && process.env.MP_WEBHOOK_ALLOW_UNSIGNED === "true";
 }

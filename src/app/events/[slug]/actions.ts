@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getClientIp, verifyTurnstile } from "@/lib/abuse";
 import { MAX_PENDING_RESERVATIONS_PER_IP, RESERVATION_MINUTES } from "@/lib/config";
 import { getEventBySlug } from "@/lib/events";
-import { createPreference } from "@/lib/mercadopago";
+import { createCheckout } from "@/lib/mercadopago";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type CheckoutValues = {
@@ -16,9 +16,9 @@ type CheckoutValues = {
   dni: string;
 };
 
-/** Reserva lista para pagar: el cliente renderiza el Wallet Brick con `preferenceId`. */
+/** Reserva lista para pagar: el cliente manda al comprador a `checkoutUrl` (Mercado Pago). */
 export type CheckoutReservation = {
-  preferenceId: string;
+  checkoutUrl: string;
   expiresAt: string;
   quantity: number;
   tierName: string;
@@ -54,6 +54,7 @@ const DB_ERROR_MESSAGES: Record<string, string> = {
   invalid_tier: "Ese lote ya no está a la venta.",
   invalid_quantity: "Esa cantidad no está permitida para este lote.",
   event_unavailable: "Esta fecha ya no está a la venta.",
+  busy: "Hay mucha gente comprando en este momento. Probá de nuevo en unos segundos.",
   too_many_reservations:
     "Hay varias reservas sin pagar desde tu conexión. Terminá de pagar alguna o esperá unos minutos.",
 };
@@ -76,7 +77,6 @@ export async function startCheckout(
     return { error: parsed.error.issues[0]?.message ?? "Revisá los datos.", values };
   }
   const input = parsed.data;
-  const [firstName, ...lastNames] = input.name.split(/\s+/);
 
   const ip = await getClientIp();
   const token = formData.get("cf-turnstile-response");
@@ -104,50 +104,83 @@ export async function startCheckout(
     p_client_ip: ip ?? undefined,
   });
   if (error) {
-    const message = DB_ERROR_MESSAGES[error.message];
+    // 55P03 = lock_timeout: hay mucha gente reservando el mismo lote a la vez.
+    const message =
+      error.code === "55P03" ? DB_ERROR_MESSAGES.busy : DB_ERROR_MESSAGES[error.message];
     if (!message) console.error("create_order", error);
     return { error: message ?? "No pudimos reservar tu entrada. Probá de nuevo.", values };
   }
 
+  // El pago se arma con lo que quedó en la orden (precio congelado, titular), no con el
+  // form: así un reenvío del mismo pedido produce exactamente la misma orden de MP y la
+  // idempotencia de MP devuelve la existente en vez de fallar.
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .select("expires_at, total")
+    .select(
+      "expires_at, total, buyer_name, buyer_email, buyer_dni, mp_checkout_url, order_items(quantity, unit_price, ticket_type:ticket_types(name))",
+    )
     .eq("id", orderId)
     .single();
   if (orderError) throw orderError;
 
-  try {
-    const preference = await createPreference({
-      orderId,
-      expiresAt: order.expires_at,
-      buyer: { firstName, lastName: lastNames.join(" "), email: input.email, dni: input.dni },
-      items: [
-        {
-          id: tier.id,
-          title: `Moevius ${event.day} ${event.month} · ${tier.name}`,
-          description: `Entrada ${tier.name} · ${event.venue}, ${event.neighborhood} · ${event.time}`,
-          quantity: input.quantity,
-          unitPrice: tier.price,
-          eventDate: event.startsAt,
-        },
-      ],
-    });
-    await supabase.from("orders").update({ mp_preference_id: preference.id }).eq("id", orderId);
+  const reservation = {
+    expiresAt: order.expires_at,
+    quantity: input.quantity,
+    tierName: tier.name,
+    total: order.total,
+  };
 
-    return {
-      values,
-      reservation: {
-        preferenceId: preference.id,
-        expiresAt: order.expires_at,
-        quantity: input.quantity,
-        tierName: tier.name,
-        total: order.total,
+  // Reenvío del form con una reserva vigente: create_order devolvió la misma orden y
+  // ya tiene su pago armado.
+  if (order.mp_checkout_url) {
+    return { values, reservation: { ...reservation, checkoutUrl: order.mp_checkout_url } };
+  }
+
+  try {
+    const [firstName, ...lastNames] = order.buyer_name.split(/\s+/);
+    const checkout = await createCheckout({
+      orderId,
+      total: order.total,
+      reservationMinutes: RESERVATION_MINUTES,
+      buyer: {
+        firstName,
+        lastName: lastNames.join(" "),
+        email: order.buyer_email,
+        dni: order.buyer_dni,
       },
-    };
+      items: order.order_items.map((item) => ({
+        title: `Moevius ${event.day} ${event.month} · ${item.ticket_type.name}`,
+        description: `Entrada ${item.ticket_type.name} · ${event.venue}, ${event.neighborhood} · ${event.time}`,
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        eventDate: event.startsAt,
+      })),
+    });
+    const { error: saveError } = await supabase
+      .from("orders")
+      .update({ mp_order_id: checkout.id, mp_checkout_url: checkout.checkoutUrl })
+      .eq("id", orderId);
+    // Sin el id de MP guardado la página de la orden no puede consultar el pago.
+    if (saveError) throw saveError;
+
+    return { values, reservation: { ...reservation, checkoutUrl: checkout.checkoutUrl } };
   } catch (err) {
-    console.error("createPreference", err);
-    // Libera el cupo reservado: sin preferencia no hay forma de pagar esta orden.
-    await supabase.from("orders").update({ status: "cancelled" }).eq("id", orderId);
+    console.error("createCheckout", err);
+    // Si otro envío del mismo pedido ya armó el pago, la reserva vale: se usa esa.
+    const { data: current } = await supabase
+      .from("orders")
+      .select("mp_checkout_url")
+      .eq("id", orderId)
+      .single();
+    if (current?.mp_checkout_url) {
+      return { values, reservation: { ...reservation, checkoutUrl: current.mp_checkout_url } };
+    }
+    // Libera el cupo reservado: sin orden de MP no hay forma de pagar esta reserva.
+    await supabase
+      .from("orders")
+      .update({ status: "cancelled" })
+      .eq("id", orderId)
+      .is("mp_checkout_url", null);
     return { error: "No pudimos conectar con Mercado Pago. Probá de nuevo.", values };
   }
 }

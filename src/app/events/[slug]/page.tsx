@@ -8,6 +8,7 @@ import { RESERVATION_MINUTES } from "@/lib/config";
 import { getEventBySlug } from "@/lib/events";
 
 import { startCheckout } from "./actions";
+import { BuyBar } from "./buy-bar";
 import { CheckoutForm } from "./checkout-form";
 
 export async function generateMetadata({ params }: PageProps<"/events/[slug]">): Promise<Metadata> {
@@ -25,10 +26,12 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
-        <div className="grid gap-12 lg:grid-cols-[1fr_28rem] lg:gap-20">
+        {/* minmax(0, …): sin esto una palabra larga del título ("DICIEMBRE") estira la
+            columna más que la pantalla en mobile y el recorte de html la corta. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-20">
           <section>
             <AvailabilityBadge availability={event.availability} />
-            <h1 className="font-display mt-6 text-6xl leading-[0.9] tracking-tight uppercase sm:text-7xl">
+            <h1 className="font-display mt-6 text-[clamp(2.75rem,15vw,4.5rem)] leading-[0.9] tracking-tight uppercase">
               {event.day}
               <br />
               <span className="highlight">{event.month}</span>
@@ -47,7 +50,10 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
             </ul>
           </section>
 
-          <section className="border-foreground bg-card shadow-hard self-start rounded-3xl border-2 p-6 sm:p-8">
+          <section
+            id="checkout"
+            className="border-foreground bg-card shadow-hard scroll-mt-24 self-start rounded-3xl border-2 p-6 sm:p-8"
+          >
             {event.availability === "sold-out" ? (
               <div className="text-center">
                 <h2 className="font-display text-4xl uppercase">Agotado</h2>
@@ -67,6 +73,7 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
           </section>
         </div>
       </main>
+      {event.availability !== "sold-out" && <BuyBar targetId="checkout" fromPrice={event.price} />}
       <SiteFooter />
     </>
   );

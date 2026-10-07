@@ -6,15 +6,15 @@ import { z } from "zod";
 
 import { AutoRefresh } from "@/components/auto-refresh";
 import { Pill } from "@/components/brand";
-import { MpWallet } from "@/components/mp-wallet";
+import { MpPayButton } from "@/components/mp-pay-button";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { TicketView } from "@/components/ticket-view";
 import { TIME_FORMAT } from "@/lib/format";
 import {
   getOrder,
   getOrderStatus,
-  processPayment,
-  sendTicketsEmail,
+  syncOrderWithMp,
+  sendTicketsEmailWithRetry,
   type OrderWithTickets,
 } from "@/lib/orders";
 
@@ -24,62 +24,71 @@ export const metadata: Metadata = {
 };
 
 /**
- * Mensajes para los rechazos más comunes (`status_detail` de MP). El checklist de
- * calidad pide darle al comprador feedback concreto de por qué no pasó el pago.
+ * Mensajes para los rechazos (`transactions.payments[].status_detail` de la API de
+ * Orders, que no usa los `cc_rejected_*` de Payments). El checklist de calidad pide
+ * darle al comprador feedback concreto de por qué no pasó el pago.
  */
 const REJECTION_MESSAGES: Record<string, string> = {
-  cc_rejected_insufficient_amount: "La tarjeta no tiene fondos suficientes.",
-  cc_rejected_bad_filled_security_code: "El código de seguridad no es correcto.",
-  cc_rejected_bad_filled_date: "La fecha de vencimiento no es correcta.",
-  cc_rejected_bad_filled_other: "Algún dato de la tarjeta no es correcto.",
-  cc_rejected_call_for_authorize: "Tenés que autorizar el pago con el banco de tu tarjeta.",
-  cc_rejected_card_disabled: "La tarjeta no está activa. Llamá a tu banco para activarla.",
-  cc_rejected_duplicated_payment:
-    "Ya hiciste un pago igual. Si necesitás pagar de nuevo, usá otro medio.",
-  cc_rejected_high_risk: "Mercado Pago no aprobó el pago. Probá con otro medio de pago.",
-  cc_rejected_max_attempts: "Llegaste al límite de intentos. Probá con otra tarjeta.",
+  card_insufficient_amount: "La tarjeta no tiene fondos suficientes.",
+  amount_limit_exceeded: "El monto supera el límite de la tarjeta.",
+  bad_filled_card_data: "Algún dato de la tarjeta no es correcto.",
+  required_call_for_authorize: "Tenés que autorizar el pago con el banco de tu tarjeta.",
+  card_disabled: "La tarjeta no está activa. Llamá a tu banco para activarla.",
+  rejected_by_issuer: "El banco de tu tarjeta rechazó el pago. Probá con otra.",
+  high_risk: "Mercado Pago no aprobó el pago. Probá con otro medio de pago.",
+  max_attempts_exceeded: "Llegaste al límite de intentos. Probá con otra tarjeta.",
+  invalid_installments: "Esa cantidad de cuotas no está disponible. Probá con otra.",
 };
+
+/**
+ * Cuánto después de vencida la reserva se sigue consultando a MP desde esta página. MP
+ * aprueba pagos tardíos (la orden de MP no corta justo a tiempo); pasado esto, una
+ * reserva abandonada no vuelve a costar una consulta a MP por visita.
+ */
+const LATE_PAYMENT_WINDOW_MS = 2 * 60 * 60 * 1000;
+
 const GENERIC_REJECTION_MESSAGE =
   "Mercado Pago no aprobó el pago. Probá con otra tarjeta o medio de pago.";
 
-export default async function OrderPage({ params, searchParams }: PageProps<"/orders/[orderId]">) {
+export default async function OrderPage({ params }: PageProps<"/orders/[orderId]">) {
   const { orderId } = await params;
   if (!z.uuid().safeParse(orderId).success) notFound();
 
-  const status = await getOrderStatus(orderId);
-  if (!status) notFound();
+  const current = await getOrderStatus(orderId);
+  if (!current) notFound();
 
-  // MP vuelve con ?payment_id=…: si el webhook todavía no llegó, confirmamos el pago
-  // desde acá. processPayment lo consulta a la API de MP, no confía en la URL.
-  // La orden completa se lee recién después, una sola vez (ver getOrderStatus).
-  const { payment_id } = await searchParams;
-  let rejection: string | null = null;
-  if (status === "pending" && typeof payment_id === "string" && /^\d+$/.test(payment_id)) {
+  // Si todavía espera el pago, le preguntamos a MP por la orden que armamos (nunca se
+  // confía en los parámetros de la URL de vuelta). Es lo que completa la compra si el
+  // webhook no llega o se demora. También con la reserva vencida, por un rato: MP
+  // aprueba pagos tardíos y, si todavía hay cupo, valen. La orden completa se lee
+  // después (ver getOrderStatus).
+  const awaitingPayment =
+    current.status === "pending" ||
+    ((current.status === "expired" || current.status === "cancelled") &&
+      withinLatePaymentWindow(current.expires_at));
+  if (awaitingPayment && current.mp_order_id) {
     try {
-      const result = await processPayment(payment_id);
-      if (result.orderId === orderId) {
-        if (result.justPaid) {
-          after(() =>
-            sendTicketsEmail(orderId).catch((err) =>
-              console.error("sendTicketsEmail", { orderId, err }),
-            ),
-          );
-        }
-        if (result.status === "rejected") {
-          rejection =
-            (result.statusDetail && REJECTION_MESSAGES[result.statusDetail]) ||
-            GENERIC_REJECTION_MESSAGE;
-        }
+      const result = await syncOrderWithMp(orderId, current.mp_order_id);
+      if (result?.justPaid) {
+        after(() => sendTicketsEmailWithRetry(orderId));
       }
     } catch (err) {
       // No es grave: el webhook lo va a procesar igual.
-      console.error("compra: processPayment", { orderId, payment_id, err });
+      console.error("compra: syncOrderWithMp", { orderId, err });
     }
   }
 
   const order = await getOrder(orderId);
   if (!order) notFound();
 
+  // El estado de MP sale de la orden (lo guarda processMpOrder), no del resultado de
+  // esta consulta: con el throttle, la mayoría de los refresh no consultan a MP.
+  const inReview = order.mp_status === "processing";
+  const [paymentStatus, paymentDetail] = order.mp_payment_detail?.split(":") ?? [];
+  const rejection =
+    order.mp_status !== "processed" && paymentStatus === "failed"
+      ? (paymentDetail && REJECTION_MESSAGES[paymentDetail]) || GENERIC_REJECTION_MESSAGE
+      : null;
   const expired = isReservationExpired(order);
   const holdUntil = TIME_FORMAT.format(new Date(order.expires_at));
 
@@ -110,6 +119,31 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/or
               ))}
             </ul>
           </>
+        ) : inReview ? (
+          <StatusMessage title="Estamos revisando tu pago">
+            <p>
+              Mercado Pago está revisando el pago. Suele resolverse en minutos: apenas se apruebe,
+              las entradas aparecen acá y te llegan por mail. No hace falta que pagues de nuevo.
+            </p>
+            <AutoRefresh />
+          </StatusMessage>
+        ) : order.status === "needs_refund" ||
+          (order.status === "refunded" && order.paid_at === null) ? (
+          // Pagó con la reserva vencida y el cupo ya se había vendido.
+          <StatusMessage title="Se agotó mientras pagabas">
+            <p>
+              El pago llegó cuando tu reserva ya había vencido y no quedaban entradas. Te devolvemos
+              la plata completa a tu medio de pago (según el medio, puede tardar unos días en
+              verse).
+            </p>
+            <Pill
+              className="mt-8"
+              nativeButton={false}
+              render={<Link href={`/events/${order.event.slug}`} />}
+            >
+              Ver la fecha
+            </Pill>
+          </StatusMessage>
         ) : order.status === "refunded" ? (
           <StatusMessage title="Compra reembolsada">
             <p>
@@ -136,9 +170,9 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/or
             <p>
               {rejection} Tu reserva sigue en pie hasta las <strong>{holdUntil}</strong>.
             </p>
-            {order.mp_preference_id && (
+            {order.mp_checkout_url && (
               <div className="mt-8 max-w-sm">
-                <MpWallet preferenceId={order.mp_preference_id} />
+                <MpPayButton checkoutUrl={order.mp_checkout_url} />
               </div>
             )}
           </StatusMessage>
@@ -149,9 +183,9 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/or
               mail. Si cerraste la ventana sin pagar, podés hacerlo acá hasta las{" "}
               <strong>{holdUntil}</strong>.
             </p>
-            {order.mp_preference_id && (
+            {order.mp_checkout_url && (
               <div className="mt-8 max-w-sm">
-                <MpWallet preferenceId={order.mp_preference_id} />
+                <MpPayButton checkoutUrl={order.mp_checkout_url} />
               </div>
             )}
             <AutoRefresh />
@@ -161,6 +195,10 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/or
       <SiteFooter />
     </>
   );
+}
+
+function withinLatePaymentWindow(expiresAt: string) {
+  return Date.now() - Date.parse(expiresAt) < LATE_PAYMENT_WINDOW_MS;
 }
 
 function isReservationExpired(order: Pick<OrderWithTickets, "status" | "expires_at">) {

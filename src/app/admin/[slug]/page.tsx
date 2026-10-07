@@ -30,7 +30,7 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
     .from("orders")
     .select("*, tickets(status)")
     .eq("event_id", event.id)
-    .in("status", ["paid", "pending", "refunded"])
+    .in("status", ["paid", "pending", "refunded", "needs_refund"])
     .order("created_at", { ascending: false })
     .limit(500);
   if (search) {
@@ -96,9 +96,15 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
                         ? "Pagada"
                         : order.status === "refunded"
                           ? "Reembolsada"
-                          : expired
-                            ? "Vencida"
-                            : "Esperando pago"}
+                          : order.status === "needs_refund"
+                            ? "Pagó tarde, sin cupo: reembolsando"
+                            : expired
+                              ? "Vencida"
+                              : "Esperando pago"}
+                      {/* Los reintentos automáticos fallaron: hay que reenviar a mano. */}
+                      {order.status === "paid" && !order.email_sent_at && (
+                        <p className="text-destructive text-xs font-bold">Mail sin enviar</p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {order.status === "paid" ? `${used} / ${order.tickets.length} usadas` : "—"}

@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
-    "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.2",
     "@yudiel/react-qr-scanner": "^2.6.0",
