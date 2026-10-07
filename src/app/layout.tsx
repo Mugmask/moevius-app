@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo_Black, Geist, Geist_Mono } from "next/font/google";
+import { BRAND } from "@/lib/brand-colors";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,6 +25,13 @@ const archivoBlack = Archivo_Black({
 export const metadata: Metadata = {
   title: "Moevius",
   description: "Ticketera para eventos",
+};
+
+// La barra del navegador toma el color del fondo; `cover` deja usar toda la pantalla
+// en iPhone (las barras fijas respetan `env(safe-area-inset-*)`).
+export const viewport: Viewport = {
+  themeColor: BRAND.paper,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

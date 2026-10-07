@@ -30,7 +30,7 @@ export function SubscribeForm() {
           type="email"
           required
           placeholder="tumail@ejemplo.com"
-          className="border-foreground bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground h-12 flex-1 rounded-full border-2 px-5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="border-foreground bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground h-12 rounded-full sm:flex-1 border-2 px-5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         />
         <Pill type="submit" className="justify-center" disabled={pending}>
           {pending ? "Anotando…" : "Avisame"}

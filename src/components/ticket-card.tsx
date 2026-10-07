@@ -56,10 +56,14 @@ export function TicketCard({
           {venue} · {neighborhood}
         </p>
 
-        <div className="mt-6 flex items-end justify-between gap-4">
+        {/* En el celu el titular va arriba a todo el ancho: al lado del QR no entraba y se
+            cortaba, y en la puerta se compara con el DNI. */}
+        <div className="mt-6 flex flex-col items-start gap-4 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
           <div className="min-w-0">
             <p className="text-muted-foreground text-xs font-bold">{detailLabel}</p>
-            <p className="font-display truncate text-2xl tracking-tight">{detail}</p>
+            <p className="font-display text-2xl leading-tight tracking-tight break-words">
+              {detail}
+            </p>
           </div>
           {qr}
         </div>
