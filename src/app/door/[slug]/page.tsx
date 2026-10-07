@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { formatEventDates } from "@/lib/events";
 import { requireStaff } from "@/lib/staff";
+import { TEST_MODE } from "@/lib/environment";
 import { createClient } from "@/lib/supabase/server";
 
 import { checkIn } from "./actions";
@@ -20,6 +21,7 @@ export default async function DoorEventPage({ params }: PageProps<"/door/[slug]"
     .from("events")
     .select("*")
     .eq("slug", slug)
+    .eq("is_test", TEST_MODE)
     .maybeSingle();
   if (error) throw error;
   if (!event) notFound();

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { getClientIp, verifyTurnstile } from "@/lib/abuse";
 import { MAX_PENDING_RESERVATIONS_PER_IP, RESERVATION_MINUTES } from "@/lib/config";
+import { TEST_MODE } from "@/lib/environment";
 import { getEventBySlug } from "@/lib/events";
 import { createCheckout } from "@/lib/mercadopago";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -101,6 +102,7 @@ export async function startCheckout(
     p_buyer_dni: input.dni,
     p_reservation_minutes: RESERVATION_MINUTES,
     p_max_pending_per_ip: MAX_PENDING_RESERVATIONS_PER_IP,
+    p_test_mode: TEST_MODE,
     p_client_ip: ip ?? undefined,
   });
   if (error) {

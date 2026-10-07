@@ -44,6 +44,7 @@ export type Database = {
           created_at: string
           ends_at: string
           id: string
+          is_test: boolean
           lineup: string[]
           neighborhood: string
           slug: string
@@ -56,6 +57,7 @@ export type Database = {
           created_at?: string
           ends_at: string
           id?: string
+          is_test?: boolean
           lineup?: string[]
           neighborhood: string
           slug: string
@@ -68,6 +70,7 @@ export type Database = {
           created_at?: string
           ends_at?: string
           id?: string
+          is_test?: boolean
           lineup?: string[]
           neighborhood?: string
           slug?: string
@@ -346,19 +349,34 @@ export type Database = {
         Args: { p_min_seconds: number; p_order_id: string }
         Returns: boolean
       }
-      create_order: {
-        Args: {
-          p_buyer_dni: string
-          p_buyer_email: string
-          p_buyer_name: string
-          p_client_ip?: unknown
-          p_event_id: string
-          p_items: Json
-          p_max_pending_per_ip: number
-          p_reservation_minutes: number
-        }
-        Returns: string
-      }
+      create_order:
+        | {
+            Args: {
+              p_buyer_dni: string
+              p_buyer_email: string
+              p_buyer_name: string
+              p_client_ip?: unknown
+              p_event_id: string
+              p_items: Json
+              p_max_pending_per_ip: number
+              p_reservation_minutes: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_buyer_dni: string
+              p_buyer_email: string
+              p_buyer_name: string
+              p_client_ip?: unknown
+              p_event_id: string
+              p_items: Json
+              p_max_pending_per_ip: number
+              p_reservation_minutes: number
+              p_test_mode: boolean
+            }
+            Returns: string
+          }
       event_stats: {
         Args: never
         Returns: {
