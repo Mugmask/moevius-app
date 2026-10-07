@@ -21,9 +21,19 @@ ticket por mail con QR y el staff lo valida en la puerta desde el celular.
 - `src/app/api` — endpoints (incluye el webhook de Mercado Pago).
 - `supabase/` — migraciones. `scripts/` — scripts de staff (`pnpm staff:set`).
 
+## Entornos y base de datos
+
+- **Una sola base remota** para staging y producción (el plan gratis de Supabase no da para otra).
+  Producción (`VERCEL_ENV=production`) solo ve y vende fechas reales; staging, previews y local solo
+  fechas con `events.is_test` (ver `src/lib/environment.ts`; `create_order` también lo exige).
+- **Local con Docker** (no toca la nube): `pnpm db:local` levanta Supabase en los puertos 544xx
+  (convive con otros proyectos en 543xx), `pnpm db:local:reset` aplica migraciones + `supabase/seed.sql`,
+  `pnpm dev:local` corre la app contra esa base, `pnpm staff:set:local` crea staff ahí.
+
 ## Verificación
 
-`pnpm typecheck`, `pnpm lint`, `pnpm format:check`. Cambios visuales: verificar con Playwright (`pnpm dev`).
+`pnpm typecheck`, `pnpm lint`, `pnpm format:check`. Cambios visuales: verificar con Playwright (`pnpm dev`
+o `pnpm dev:local`). Migraciones: probarlas primero con `pnpm db:local:reset`.
 
 ## Cuidado (preguntar antes)
 

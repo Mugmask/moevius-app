@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo_Black, Geist, Geist_Mono } from "next/font/google";
 import { BRAND } from "@/lib/brand-colors";
+import { TEST_MODE } from "@/lib/environment";
 
 import "./globals.css";
 
@@ -42,7 +43,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       {/* Las piezas rotadas y las calcomanías se pasan del borde a propósito:
           el recorte evita que eso se convierta en scroll horizontal. */}
-      <body className="flex min-h-full flex-col overflow-x-hidden">{children}</body>
+      <body className="flex min-h-full flex-col overflow-x-hidden">
+        {/* Staging comparte base con producción pero vende solo fechas de prueba con
+            credenciales de prueba de MP: que nadie lo confunda con la tienda real. */}
+        {TEST_MODE && (
+          <p className="bg-foreground text-background px-4 py-1.5 text-center text-xs font-bold">
+            Entorno de prueba · las fechas y los pagos no son reales
+          </p>
+        )}
+        {children}
+      </body>
     </html>
   );
 }

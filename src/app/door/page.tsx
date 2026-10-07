@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { StaffHeader } from "@/components/staff-header";
+import { TEST_MODE } from "@/lib/environment";
 import { formatEventDates } from "@/lib/events";
 import { requireStaff } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
@@ -17,6 +18,7 @@ export default async function DoorPage() {
     .from("events")
     .select("*")
     .eq("status", "published")
+    .eq("is_test", TEST_MODE)
     .gt("ends_at", new Date().toISOString())
     .order("starts_at")
     .limit(5);

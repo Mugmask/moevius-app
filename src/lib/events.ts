@@ -1,6 +1,7 @@
 import "server-only";
 
 import { FEW_LEFT_THRESHOLD } from "@/lib/config";
+import { TEST_MODE } from "@/lib/environment";
 import { TIMEZONE } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -50,6 +51,7 @@ export async function getUpcomingEvents(): Promise<EventListing[]> {
       .select(EVENT_SELECT)
       // Explícito: el staff logueado también ve borradores por RLS.
       .eq("status", "published")
+      .eq("is_test", TEST_MODE)
       .gt("ends_at", new Date().toISOString())
       .order("starts_at"),
     getAvailability(),
@@ -67,6 +69,7 @@ export async function getEventBySlug(slug: string): Promise<EventListing | null>
       .select(EVENT_SELECT)
       .eq("slug", slug)
       .eq("status", "published")
+      .eq("is_test", TEST_MODE)
       .gt("ends_at", new Date().toISOString())
       .maybeSingle(),
     getAvailability(),

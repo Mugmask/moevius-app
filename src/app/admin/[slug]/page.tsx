@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { StaffHeader } from "@/components/staff-header";
 import { formatEventDates } from "@/lib/events";
 import { DATE_TIME_FORMAT, PRICE_FORMAT } from "@/lib/format";
+import { TEST_MODE } from "@/lib/environment";
 import { requireStaff } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,6 +23,7 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
     .from("events")
     .select("*")
     .eq("slug", slug)
+    .eq("is_test", TEST_MODE)
     .maybeSingle();
   if (error) throw error;
   if (!event) notFound();

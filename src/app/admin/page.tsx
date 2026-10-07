@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { StaffHeader } from "@/components/staff-header";
 import { formatEventDates } from "@/lib/events";
+import { TEST_MODE } from "@/lib/environment";
 import { PRICE_FORMAT } from "@/lib/format";
 import { requireStaff } from "@/lib/staff";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +20,7 @@ export default async function AdminPage() {
       .from("events")
       .select("*, ticket_types(capacity, active)")
       .neq("status", "archived")
+      .eq("is_test", TEST_MODE)
       .order("starts_at"),
     supabase.rpc("event_stats"),
   ]);

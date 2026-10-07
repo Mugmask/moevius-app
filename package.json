@@ -14,8 +14,13 @@
     "db:new": "supabase migration new",
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/database.types.ts",
     "db:push": "supabase db push && pnpm db:types",
+    "db:local": "supabase start -x imgproxy,edge-runtime,logflare,vector,realtime,storage-api,supavisor",
+    "db:local:reset": "supabase db reset --local",
+    "db:local:stop": "supabase stop",
+    "dev:local": "node scripts/with-local-db.mjs next dev",
     "prepare": "husky",
-    "staff:set": "node --env-file=.env.local scripts/staff-set.mjs"
+    "staff:set": "node --env-file=.env.local scripts/staff-set.mjs",
+    "staff:set:local": "node scripts/with-local-db.mjs node --env-file=.env.local scripts/staff-set.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
