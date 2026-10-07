@@ -9,8 +9,9 @@ ticket por mail con QR y el staff lo valida en la puerta desde el celular.
 
 - **Next.js 16** (App Router, `src/app/`) — ver AGENTS.md: leer `node_modules/next/dist/docs/` antes de usar APIs de Next.
 - **Supabase** (auth + DB). Cliente en `src/lib/supabase/`; tipos generados en `src/lib/supabase/database.types.ts` (no editar a mano).
-- Tailwind v4 + shadcn/ui (`src/components/ui/`), zod, Mercado Pago (SDK + webhook), mails con nodemailer (SMTP) + react-email (`src/emails/`).
-- Deploy en Vercel (previews por PR; el webhook de MP acepta firmas sin validar solo en previews).
+- Tailwind v4 + shadcn/ui (`src/components/ui/`), zod, Mercado Pago (Checkout Pro vía **API de Orders** + webhook), mails con nodemailer (SMTP) + react-email (`src/emails/`).
+- Deploy en Vercel (previews por PR; staging fijo en `staging-moevius-app.vercel.app`, que es a donde
+  apunta el webhook de la app de test de MP). Gotchas de cupo y de MP: `exploracion/ARQUITECTURA.md`.
 
 ## Mapa
 
