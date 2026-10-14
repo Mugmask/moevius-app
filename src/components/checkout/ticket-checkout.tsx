@@ -267,7 +267,7 @@ function Quantity({
     <div className="mt-4 flex items-center justify-between gap-4">
       <p id="quantity-label">
         <span className="font-bold">Cantidad</span>{" "}
-        <span className="opacity-60">· hasta {max}</span>
+        <span className="whitespace-nowrap opacity-60">· hasta {max}</span>
       </p>
       <div role="group" aria-labelledby="quantity-label" className="flex items-center gap-3">
         <button

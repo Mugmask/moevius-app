@@ -42,6 +42,10 @@ type Props = {
  * scroll del sistema, y un `scroll-snap` de proximidad tiraba la página para atrás desde
  * casi 700px (el talón, en pleno formulario). La pausa alcanza para notar el final.
  *
+ * Dos toques de vida, también del navegador y sin JS por frame: mientras sale, el papel
+ * se mece apenas colgado de la ranura y se va aquietando (`ticket-sway`, atado al mismo
+ * tramo del scroll), y al cargar asoma con una caída corta (`ticket-drop`).
+ *
  * Cuánto salió depende solo del scroll: nada lo traba afuera. Si completaste el talón y
  * volvés a subir, el ticket entra con lo escrito y vuelve a salir igual. Si recibe foco
  * algo que todavía está adentro de la máquina, o la URL trae un ancla del ticket, la
@@ -51,14 +55,18 @@ export function TicketPull({ machine, children }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
+  const swingRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const track = trackRef.current;
     const sticky = stickyRef.current;
     const spacer = spacerRef.current;
+    const swing = swingRef.current;
+    const drop = dropRef.current;
     const ticket = track?.querySelector<HTMLElement>("[data-ticket]");
     const stub = track?.querySelector<HTMLElement>("[data-ticket-stub]");
-    if (!track || !sticky || !spacer || !ticket) return;
+    if (!track || !sticky || !spacer || !swing || !drop || !ticket) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const scrollDriven = CSS.supports("animation-timeline", "scroll()");
@@ -91,7 +99,9 @@ export function TicketPull({ machine, children }: Props) {
       spacer.style.height = `${pullDistance + hold}px`;
       keyframes.textContent = `@keyframes ticket-pull { from { transform: translateY(${peek - height}px); } to { transform: translateY(0); } }`;
       if (scrollDriven) {
-        ticket.style.setProperty("animation-range", `${pullStart}px ${pullStart + pullDistance}px`);
+        const range = `${pullStart}px ${pullStart + pullDistance}px`;
+        ticket.style.setProperty("animation-range", range);
+        swing.style.setProperty("animation-range", range);
       }
     };
 
@@ -141,8 +151,10 @@ export function TicketPull({ machine, children }: Props) {
     };
 
     measure();
-    if (scrollDriven) ticket.classList.add("ticket-pull-driven");
-    else apply();
+    if (scrollDriven) {
+      ticket.classList.add("ticket-pull-driven");
+      swing.classList.add("ticket-sway");
+    } else apply();
 
     // `/#tickets` ("Volver a comprar"): el ancla está en el talón. Vino a comprar: la
     // página baja hasta pasar la pausa (ahí el ticket ya está entero y la página se mueve)
@@ -156,6 +168,10 @@ export function TicketPull({ machine, children }: Props) {
       const shift = new DOMMatrix(getComputedStyle(ticket).transform).m42;
       const below = anchor.getBoundingClientRect().top - shift - FOCUS_MARGIN;
       if (below > 0) window.scrollBy(0, below);
+    } else {
+      // La caída arranca cuando cargan las fuentes, lo mismo que espera el loader para
+      // irse. Con el ancla no hay caída: el papel ya está entero afuera.
+      void document.fonts.ready.then(() => drop.classList.add("ticket-drop"));
     }
 
     // Cualquier cambio de alto del ticket o de lo que está arriba mueve el tramo fijo.
@@ -172,6 +188,7 @@ export function TicketPull({ machine, children }: Props) {
       window.removeEventListener("resize", onResize);
       ticket.removeEventListener("focusin", onFocusIn);
       ticket.classList.remove("ticket-pull-driven");
+      swing.classList.remove("ticket-sway");
       keyframes.remove();
       spacer.style.height = "";
     };
@@ -187,7 +204,12 @@ export function TicketPull({ machine, children }: Props) {
         {/* Arranca adentro de la rendija (50px sobre el borde de abajo de la
             máquina, ver Machine en la home) y va por encima de la máquina: el papel sale
             de adentro de la ranura, no del borde. */}
-        <div className="ticket-pull relative z-10 -mt-[50px]">{children}</div>
+        <div className="ticket-pull relative z-10 -mt-[50px]">
+          {/* El balanceo gira desde arriba de todo (la ranura); la caída va adentro. */}
+          <div ref={swingRef} className="origin-top">
+            <div ref={dropRef}>{children}</div>
+          </div>
+        </div>
       </div>
       <div ref={spacerRef} aria-hidden />
     </div>

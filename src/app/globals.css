@@ -212,6 +212,55 @@
     animation: ticket-pull linear both;
     animation-timeline: scroll(root);
   }
+
+  /* Mientras sale, se mece colgado de la ranura y se va aquietando (atado al mismo tramo
+     del scroll que el tirón: si volvés para atrás, se mece al revés). Menos de 1°: a la
+     altura de la ranura no se corre más de 2px, y la sombra lo tapa. */
+  .ticket-sway {
+    animation: ticket-sway linear both;
+    animation-timeline: scroll(root);
+  }
+
+  /* Al cargar, el papel asoma de la ranura con una caída corta y un rebote. */
+  .ticket-drop {
+    animation: ticket-drop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+  }
+}
+
+@keyframes ticket-sway {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-in-out;
+  }
+  12% {
+    transform: rotate(0.7deg);
+    animation-timing-function: ease-in-out;
+  }
+  28% {
+    transform: rotate(-0.6deg);
+    animation-timing-function: ease-in-out;
+  }
+  45% {
+    transform: rotate(0.45deg);
+    animation-timing-function: ease-in-out;
+  }
+  62% {
+    transform: rotate(-0.3deg);
+    animation-timing-function: ease-in-out;
+  }
+  80% {
+    transform: rotate(0.15deg);
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes ticket-drop {
+  from {
+    transform: translateY(-5.5rem);
+  }
 }
 
 /* El loader de la home (ver PageLoader): sin JS nunca se iría, así que solo existe con JS. */
@@ -331,10 +380,9 @@
 @utility slot-depth {
   background: linear-gradient(
     180deg,
-    oklch(0 0 0) 0 33%,
-    oklch(0 0 0 / 0.75) 45%,
-    oklch(0 0 0 / 0.4) 62%,
-    oklch(0 0 0 / 0.15) 80%,
+    oklch(0 0 0) 0 60%,
+    oklch(0 0 0 / 0.6) 82%,
+    oklch(0 0 0 / 0.3) 92%,
     transparent
   );
 }

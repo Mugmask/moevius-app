@@ -168,24 +168,29 @@ function TicketHeading({ event }: { event: EventListing }) {
  *   Abajo de la ranura sigue el cuerpo de la máquina y el papel le pasa por delante,
  *   como en una máquina real.
  * - La rendija tiene que ser bastante más ancha que el papel, como en una máquina real:
- *   en el celu la máquina se sale 8px de la columna (-mx-2) y la rendija empieza a 9.5px de
- *   la columna; el papel, a 20px (mx-5). Desde sm, 25.5px contra 40px (sm:mx-10).
+ *   en el celu la máquina se sale 8px de la columna (-mx-2) y la rendija empieza a 5.5px de
+ *   la columna (borde 1.5 + px-2 + px-1 del nicho); el papel, a 12px (mx-3). Desde sm,
+ *   25.5px contra 40px (sm:mx-10). La sombra de la ranura (`inset-x`) es esa diferencia. En
+ *   el celu la rendija tiene puntas menos redondas: con `rounded-full` las curvas caían
+ *   encima de las esquinas del papel.
+ * - La sombra de la ranura baja apenas 3px: el gris queda pegado al labio de la rendija.
+ *   Si se pasa, se ve más grande que la ranura de donde sale el ticket.
  */
 function Machine() {
   return (
     <div
       aria-hidden
-      className="chassis relative -mx-2 rounded-[1.75rem] px-2.5 pt-6 pb-6 sm:mx-0 sm:px-4"
+      className="chassis relative -mx-2 rounded-[1.75rem] px-2 pt-6 pb-6 sm:mx-0 sm:px-4"
     >
       <div className="chassis-sheen" />
 
       {/* Ranura: nicho hundido con la rendija adentro. La sombra va arriba del papel:
           z-20, el papel es z-10 (ver TicketPull). */}
-      <div className="slot-bezel rounded-2xl px-1.5 py-2 sm:px-2">
-        <div className="slot-opening relative h-5 rounded-full">
-          {/* Sombra sobre el papel: su mismo ancho, de adentro de la rendija hasta 40px abajo
-              del labio. */}
-          <div className="slot-depth pointer-events-none absolute inset-x-[10px] top-0 z-20 h-[calc(100%+2.5rem)] sm:inset-x-[14px]" />
+      <div className="slot-bezel rounded-2xl px-1 py-2 sm:px-2">
+        <div className="slot-opening relative h-5 rounded-lg sm:rounded-full">
+          {/* Sombra sobre el papel: su mismo ancho, negra adentro de la rendija y con el gris
+              pegado al labio (baja 3px). */}
+          <div className="slot-depth pointer-events-none absolute inset-x-[6.5px] top-0 z-20 h-[calc(100%+3px)] sm:inset-x-[14.5px]" />
         </div>
       </div>
     </div>
@@ -196,7 +201,7 @@ function Machine() {
 
 /** Papel del ticket: recibo térmico arrugado, en mono y mayúsculas; crece en desktop. */
 const RECEIPT_PAPER =
-  "bg-paper paper-crumple relative px-5 font-mono text-[0.8125rem] leading-relaxed uppercase sm:px-10 sm:text-sm lg:px-12 lg:text-[0.9375rem]";
+  "bg-paper paper-crumple relative px-4 font-mono text-[0.8125rem] leading-relaxed uppercase sm:px-10 sm:text-sm lg:px-12 lg:text-[0.9375rem]";
 
 /**
  * La entrada que sale de la máquina, como un recibo intervenido a mano: arriba la fiesta
@@ -216,7 +221,7 @@ function Ticket({
   const edition = event.title.replace(/^moevius\s*/i, "");
 
   return (
-    <article data-ticket className="text-ink relative isolate mx-5 sm:mx-10">
+    <article data-ticket className="text-ink relative isolate mx-3 sm:mx-10">
       <MarkerFilter />
 
       {/* Sombra del papel: un box-shadow que se pinta una vez y viaja con el ticket. Con
@@ -224,12 +229,15 @@ function Ticket({
           (el ticket mide miles de px a densidad 3x) y trababa el scroll en el celu. */}
       <div aria-hidden className="absolute inset-0 -z-10 shadow-[0_24px_30px_oklch(0_0_0/0.55)]" />
 
-      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-9 pb-7 lg:pt-12")}>
+      {/* Arriba del título queda papel en blanco: es lo último que sale, y así "MOEVIUS" no
+          termina pegado a la ranura (y queda un tramo más para scrollear). */}
+      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-24 pb-7 lg:pt-28")}>
         {/* Las estrellas van adentro del papel: lo que se pasa del borde se vería salir
-            por fuera de la ranura. Quedan debajo del título (`relative` en el header). */}
+            por fuera de la ranura. Quedan debajo del título (`relative` en el header) y la
+            roja, pegada a su esquina (el `top` sigue al padding de arriba). */}
         <Star
           seed={3}
-          className="text-accent absolute top-1 right-1 size-16 rotate-12 sm:top-2 sm:right-2 sm:size-24"
+          className="text-accent absolute top-16 right-1 size-16 rotate-12 sm:top-[4.25rem] sm:right-2 sm:size-24 lg:top-[4.5rem]"
         />
         <Star
           seed={8}

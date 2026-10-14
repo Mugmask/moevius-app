@@ -67,6 +67,10 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   (`ticket-pull-driven` en `globals.css`) que corre en el hilo del scroll. `TicketPull`
   solo mide (con `ResizeObserver`) y escribe los keyframes en px y el `animation-range`.
   Sin soporte (iOS < 26, Firefox) hace lo mismo desde JS, también 1:1.
+- La "vida" del papel también es del navegador: `ticket-sway` (se mece < 1° atado al
+  mismo tramo del scroll, gira desde la ranura; solo con soporte nativo) y `ticket-drop`
+  (caída al cargar, cuando cargan las fuentes; no con el ancla). Nada de movimiento por
+  frame desde JS.
 - **No volver a mover el papel desde JS con resorte, ni frenar o imantar el scroll**: en
   el celu (120Hz) el papel iba un paso atrás del dedo y se sentía trabado; frenar el
   envión se peleaba con el scroll del sistema; y un `scroll-snap` de proximidad tiraba la
