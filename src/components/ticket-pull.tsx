@@ -69,7 +69,9 @@ export function TicketPull({ machine, children }: Props) {
     if (!track || !sticky || !spacer || !swing || !drop || !ticket) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const scrollDriven = CSS.supports("animation-timeline", "scroll()");
+    // No con `CSS.supports("animation-timeline", …)`: Chrome 155 aplica la propiedad en la
+    // hoja de estilos pero ahí devuelve false (hasta con `auto`), y caía al respaldo de JS.
+    const scrollDriven = "ScrollTimeline" in window;
 
     // Medidas cacheadas: se toman solo cuando algo cambia de tamaño.
     let height = 0;
