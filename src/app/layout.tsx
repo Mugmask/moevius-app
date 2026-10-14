@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono, Permanent_Marker } from "next/font/google";
 import { BRAND } from "@/lib/brand-colors";
 import { TEST_MODE } from "@/lib/environment";
+import { publicEnv } from "@/lib/supabase/env";
 
 import "./globals.css";
 
@@ -31,6 +32,9 @@ const permanentMarker = Permanent_Marker({
 });
 
 export const metadata: Metadata = {
+  // Para que la vista previa al compartir (opengraph-image) tenga URL absoluta del
+  // dominio público y no la del deploy.
+  metadataBase: siteUrlOrUndefined(),
   title: "Moevius",
   description: "Ticketera para eventos",
 };
@@ -62,4 +66,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </body>
     </html>
   );
+}
+
+/** La URL pública del sitio, o nada si no está configurada (ej. un build local sin env). */
+function siteUrlOrUndefined() {
+  try {
+    return new URL(publicEnv.siteUrl);
+  } catch {
+    return undefined;
+  }
 }

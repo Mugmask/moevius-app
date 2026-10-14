@@ -18,10 +18,10 @@ export function GET() {
     orientation: "portrait",
     background_color: BRAND.night,
     theme_color: BRAND.night,
-    // El mismo ícono sirve de "maskable": el punto está dentro de la zona segura.
+    // El isotipo (la M) sirve también de "maskable": queda dentro de la zona segura.
     icons: [192, 512].flatMap((size) =>
       (["any", "maskable"] as const).map((purpose) => ({
-        src: `/door/app-icon/${size}`,
+        src: `/brand/m-blob-${size}.png`,
         sizes: `${size}x${size}`,
         type: "image/png",
         purpose,

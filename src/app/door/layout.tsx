@@ -5,7 +5,7 @@ import { BRAND } from "@/lib/brand-colors";
 export const metadata: Metadata = {
   manifest: "/door/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Puerta", statusBarStyle: "black-translucent" },
-  icons: { apple: "/door/app-icon/192" },
+  icons: { apple: "/brand/m-blob-192.png" },
 };
 
 export const viewport: Viewport = {

@@ -112,6 +112,17 @@ export function formatEventDates(event: Pick<Tables<"events">, "starts_at" | "en
   };
 }
 
+/** "Moevius Vol. 13" → "Vol. 13": la edición sin la marca ("Moevius" si no queda nada). */
+export function editionOf(title: string) {
+  return title.replace(/^moevius\s*/i, "") || "Moevius";
+}
+
+/** Cómo aparece una fecha en "tus entradas": "Moevius Vol. 13 · VIE 13 NOV". */
+export function savedTicketLabel(event: Pick<Tables<"events">, "title" | "starts_at" | "ends_at">) {
+  const { day, month } = formatEventDates(event);
+  return `${event.title} · ${day} ${month.slice(0, 3)}`;
+}
+
 /** "23:59", en hora de Argentina. */
 function formatTime(date: string) {
   return new Intl.DateTimeFormat("es-AR", {

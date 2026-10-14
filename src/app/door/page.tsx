@@ -1,7 +1,10 @@
+import { ScanLine } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { StaffHeader } from "@/components/staff-header";
+import { AuraBackdrop } from "@/components/aura-backdrop";
+import { StaffTitle } from "@/components/staff-page";
 import { TEST_MODE } from "@/lib/environment";
 import { formatEventDates } from "@/lib/events";
 import { requireStaff } from "@/lib/staff";
@@ -26,34 +29,39 @@ export default async function DoorPage() {
 
   return (
     <>
-      <StaffHeader email={staff.user.email} role={staff.role} />
-      <main className="mx-auto w-full max-w-md flex-1 px-6 py-12">
-        <h1 className="font-display font-stretch-expanded font-extrabold text-5xl tracking-tight uppercase">
-          Puerta
-        </h1>
-        <p className="text-muted-foreground mt-2 font-medium">¿Qué fecha estás controlando?</p>
+      <StaffHeader email={staff.user.email} role={staff.role} current="puerta" />
+      <main className="relative isolate mx-auto w-full max-w-md flex-1 px-4 pt-10 pb-16 sm:px-6">
+        <AuraBackdrop />
+        <StaffTitle label="Staff">Puerta</StaffTitle>
+        <p className="text-muted-foreground mt-4 font-medium">¿Qué fecha estás controlando?</p>
 
-        <ul className="mt-8 flex flex-col gap-3">
+        <ul className="mt-8 flex flex-col gap-4">
           {events.map((event) => {
             const { day, month, time } = formatEventDates(event);
             return (
               <li key={event.id}>
+                {/* Cada fecha, un talón de papel: toca y abre el escáner. */}
                 <Link
                   href={`/door/${event.slug}`}
-                  className="border-border bg-card shadow-hard-sm hover:border-primary block rounded-2xl border p-5"
+                  className="group bg-paper paper-crumple text-ink focus-visible:ring-primary/50 flex items-center justify-between gap-4 px-5 py-4 shadow-[0_18px_30px_oklch(0_0_0/0.5)] transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-4"
                 >
-                  <p className="font-display font-stretch-expanded font-extrabold text-3xl tracking-tight uppercase">
-                    {day} {month}
-                  </p>
-                  <p className="text-sm font-bold">
-                    {event.venue} · {time}
-                  </p>
+                  <span className="min-w-0">
+                    <span className="font-display font-stretch-condensed block text-4xl leading-[0.9] font-extrabold uppercase">
+                      <span className="bg-highlighter/80 px-1">
+                        {day} {month.slice(0, 3)}
+                      </span>
+                    </span>
+                    <span className="mt-2 block font-mono text-xs font-bold tracking-[0.1em] uppercase">
+                      {event.venue} · {time.replace(" — ", " → ")}
+                    </span>
+                  </span>
+                  <ScanLine aria-hidden className="size-7 shrink-0" />
                 </Link>
               </li>
             );
           })}
           {events.length === 0 && (
-            <li className="text-muted-foreground font-medium">No hay fechas próximas.</li>
+            <li className="label-mono text-muted-foreground">No hay fechas próximas.</li>
           )}
         </ul>
       </main>

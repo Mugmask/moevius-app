@@ -3,17 +3,17 @@ import type { Metadata } from "next";
 
 import { startCheckout } from "@/components/checkout/actions";
 import { TicketCheckout } from "@/components/checkout/ticket-checkout";
-import { MarkerFilter, Star } from "@/components/doodles";
+import { Blob, Circle, Highlight, MarkerFilter, Scribble, Star } from "@/components/doodles";
 import { LiquidLogo, MoeviusLogo } from "@/components/logo";
 import { PageLoader } from "@/components/page-loader";
 import { PullHint } from "@/components/pull-hint";
+import { SavedTicketsLink } from "@/components/saved-tickets";
 import { Barcode } from "@/components/paper-slip";
-import { ReceiptRow, ReceiptRule } from "@/components/receipt";
+import { ReceiptRule } from "@/components/receipt";
 import { SiteFooter } from "@/components/site-chrome";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { TicketPull } from "@/components/ticket-pull";
-import { getFeaturedEvent, type EventListing } from "@/lib/events";
-import { PRICE_FORMAT } from "@/lib/format";
+import { editionOf, getFeaturedEvent, type EventListing } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -51,7 +51,12 @@ export default async function Home() {
         <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <Lights placement="ticket" />
         </div>
-        <section id="ticket" className="relative px-3 pt-12 pb-24 sm:px-5 sm:pt-16">
+        <section id="ticket" className="relative px-3 pt-3 pb-24 sm:px-5 sm:pt-6">
+          {/* Fila propia arriba del logo, alineada a su borde derecho: quien ya compró
+              vuelve a su entrada sin buscar el mail. */}
+          <div className="mx-auto mb-4 flex w-[min(88vw,36rem)] justify-end sm:mb-6">
+            <SavedTicketsLink />
+          </div>
           <TicketHeading event={event} />
           <div className="mx-auto mt-10 max-w-[28rem] sm:mt-12 sm:max-w-[34rem] lg:max-w-[40rem]">
             <TicketPull machine={<Machine />}>
@@ -68,7 +73,7 @@ export default async function Home() {
 
 /* -------------------------------------------------------------------------- */
 
-/** Luz de la pista de fondo para "próxima edición": manchas rojas difuminadas con grano. */
+/** Luz de la pista de fondo para "próxima edición": manchas índigo difuminadas con grano. */
 function Aura() {
   return (
     <div aria-hidden className="grain pointer-events-none absolute inset-0 -z-10">
@@ -92,13 +97,13 @@ function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
         <div
           className={cn(
             blob,
-            "animate-drift text-accent -top-[10%] -left-[30%] size-[110vw] max-w-[52rem] opacity-55 lg:left-[5%]",
+            "animate-drift text-aura -top-[10%] -left-[30%] size-[110vw] max-w-[52rem] opacity-55 lg:left-[5%]",
           )}
         />
         <div
           className={cn(
             blob,
-            "animate-drift text-accent top-[30%] -right-[35%] size-[80vw] max-w-[36rem] opacity-45 [animation-delay:-6s] lg:right-0",
+            "animate-drift text-aura top-[30%] -right-[35%] size-[80vw] max-w-[36rem] opacity-45 [animation-delay:-6s] lg:right-0",
           )}
         />
         <div
@@ -115,13 +120,13 @@ function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
       <div
         className={cn(
           blob,
-          "text-accent top-[5%] -left-[35%] size-[110vw] max-w-[48rem] opacity-25 [animation-delay:-3s] lg:left-[-5%]",
+          "text-aura top-[5%] -left-[35%] size-[110vw] max-w-[48rem] opacity-45 [animation-delay:-3s] lg:left-[-5%]",
         )}
       />
       <div
         className={cn(
           blob,
-          "text-accent top-[50%] -right-[40%] size-[110vw] max-w-[48rem] opacity-25 [animation-delay:-9s] lg:right-[-5%]",
+          "text-aura top-[50%] -right-[40%] size-[110vw] max-w-[48rem] opacity-40 [animation-delay:-9s] lg:right-[-5%]",
         )}
       />
     </div>
@@ -129,13 +134,11 @@ function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
 }
 
 /**
- * Encabezado de la página, centrado sobre la máquina, como la cabeza de un flyer: el logo
- * grande, la fecha, la edición y el lugar con el horario. La seña de bajar va abajo (PullHint).
+ * Encabezado de la página, centrado sobre la máquina: solo el logo grande. La fecha y el
+ * lugar van en el ticket. La seña de bajar va abajo (PullHint).
  */
 function TicketHeading({ event }: { event: EventListing }) {
   const soldOut = event.availability === "sold-out";
-  // "VIE 13" + "NOVIEMBRE" → "VIE 13 NOV".
-  const date = `${event.day} ${event.month.slice(0, 3)}`;
   return (
     <div className="mx-auto max-w-2xl text-center">
       <h1>
@@ -144,22 +147,6 @@ function TicketHeading({ event }: { event: EventListing }) {
         </span>
         <LogoFx className="mx-auto w-[min(88vw,36rem)]" />
       </h1>
-      <p
-        aria-hidden
-        className="font-display font-stretch-condensed mt-5 flex items-baseline justify-center gap-3 text-[clamp(2.25rem,11vw,4.5rem)] leading-[0.85] font-extrabold uppercase"
-      >
-        {date}
-      </p>
-      <p className="label-mono text-foreground mt-3">
-        {event.title.replace(/^moevius\s*/i, "") || event.title}
-      </p>
-      <p className="label-mono text-muted-foreground mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-        <span>{event.venue}</span>
-        <span aria-hidden>·</span>
-        <span>{event.neighborhood}</span>
-        <span aria-hidden>·</span>
-        <span className="tabular-nums">{event.time.replace(" — ", " → ")}</span>
-      </p>
       {soldOut && (
         <p className="text-muted-foreground mx-auto mt-6 max-w-md text-lg text-pretty">
           Esta edición se agotó. Igual te dejamos el ticket con toda la info.
@@ -236,7 +223,7 @@ const RECEIPT_PAPER =
 
 /**
  * La entrada que sale de la máquina, armada como un afiche: arriba la fiesta con tipografía
- * grande (la fecha es la protagonista, después el lugar y el lineup); abajo, separado por
+ * grande (el logo, la fecha en un sol psicodélico, el lugar y el lineup); abajo, separado por
  * el troquel, el talón donde se completa la compra (ver TicketCheckout). Al pie, el precio y el código de barras: es lo primero
  * que asoma (`data-ticket-stub`, ver TicketPull).
  */
@@ -249,9 +236,7 @@ function Ticket({
 }) {
   const soldOut = event.availability === "sold-out";
   // "Moevius Vol. 13" → "Vol. 13": el nombre va gigante arriba.
-  const edition = event.title.replace(/^moevius\s*/i, "");
-  // "VIE 13" → el número va enorme y el día de la semana, en una esquina.
-  const [weekday, dayNumber] = event.day.split(" ");
+  const edition = editionOf(event.title);
   // "20:59 — 03:00" → abre y cierra en las esquinas de abajo.
   const [opensAt, closesAt] = event.time.split(" — ");
 
@@ -268,6 +253,14 @@ function Ticket({
           termina pegada a la ranura (y queda un tramo más para scrollear). */}
       <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-20 pb-9 lg:pt-24")}>
         <header className="relative">
+          {/* Intervención a mano en el papel en blanco de arriba: manchas y un destello. */}
+          <Blob seed={21} className="text-aura absolute -top-[4.5rem] -left-1 size-16 opacity-70" />
+          <Blob seed={8} className="text-highlighter absolute -top-12 left-16 size-7" />
+          <Scribble
+            shape="sparkle"
+            className="text-accent absolute -top-16 right-2 size-9 rotate-12"
+          />
+          <Scribble shape="spiral" className="text-aura absolute -top-[4.25rem] right-14 size-10" />
           {/* Fila de entrada: edición y año a los costados, la estrella en el medio. Va
               adentro del papel: lo que se pasa del borde se vería salir por fuera de la
               ranura. */}
@@ -275,48 +268,49 @@ function Ticket({
             aria-hidden
             className="flex items-center gap-3 font-bold tracking-[0.2em] whitespace-nowrap"
           >
-            <span>{edition || "Moevius"}</span>
+            <span>{edition}</span>
             <span className="border-ink h-0 flex-1 border-t-2" />
             <Star seed={3} className="text-accent size-9 shrink-0 rotate-12 sm:size-11" />
             <span className="border-ink h-0 flex-1 border-t-2" />
             <span>{event.year}</span>
           </div>
-          <h2 className="mt-4">
+          <h2 className="relative mt-4">
+            <Blob
+              seed={13}
+              className="text-highlighter absolute -bottom-3 -left-2 size-24 opacity-90"
+            />
             <MoeviusLogo className="mx-auto w-full" />
             <span className="sr-only">{event.title}</span>
           </h2>
         </header>
 
-        {/* La fecha como un afiche chico: el día enorme con la tinta corrida y ondas de
-            sonido atrás; en las esquinas, día, mes y horario. */}
-        <section className="border-ink relative mt-6 border-y-2 py-3" aria-label="Fecha y horario">
-          <p className="sr-only">
-            {event.day} de {event.month} de {event.year}, de {event.time}
+        {/* Cuándo: una fila del mismo estilo que el lugar y el lineup, con la fecha grande
+            (pasada con resaltador) y el horario abajo. */}
+        <section className="relative mt-8" aria-labelledby="ticket-date">
+          <Scribble
+            shape="bolt"
+            className="text-accent absolute -top-4 right-2 size-11 rotate-12"
+          />
+          <Blob seed={34} className="text-aura absolute -top-1 right-14 size-5" />
+          <p id="ticket-date" className="tracking-[0.15em] opacity-60">
+            Cuándo
           </p>
-          <div aria-hidden className="relative isolate grid h-[min(78vw,26rem)] place-items-center">
-            <div className="sound-rings absolute top-1/2 left-1/2 -z-10 aspect-square w-[118%] -translate-1/2" />
-            <span className="ink-bleed font-display font-stretch-condensed text-[clamp(10rem,62vw,20rem)] leading-none font-extrabold tracking-[-0.05em] tabular-nums">
-              {dayNumber}
-            </span>
-            {[
-              ["top-0 left-0", weekday],
-              ["top-0 right-0 text-right", event.month],
-              ["bottom-0 left-0", `Abre ${opensAt}`],
-              ["bottom-0 right-0 text-right", `Cierra ${closesAt}`],
-            ].map(([position, text]) => (
-              <span
-                key={position}
-                className={cn("absolute font-bold tracking-[0.2em] whitespace-nowrap", position)}
-              >
-                {text}
-              </span>
-            ))}
+          <div className="border-ink mt-2 border-y-2 py-3">
+            <p className="font-display font-stretch-condensed text-[clamp(2rem,10vw,3rem)] leading-[0.9] font-extrabold">
+              <Highlight seed={5}>
+                {event.day} {event.month}
+              </Highlight>
+            </p>
+            <p className="mt-2 tabular-nums opacity-60">
+              Abre {opensAt} · Cierra {closesAt}
+            </p>
           </div>
         </section>
 
         {/* Una fila del mismo estilo que el lineup, toda clickeable: el lugar grande, la
             dirección abajo y la flecha a Maps. */}
-        <section className="mt-8" aria-labelledby="ticket-venue">
+        <section className="relative mt-8" aria-labelledby="ticket-venue">
+          <Scribble shape="zigzag" className="text-aura absolute -top-4 right-0 h-8 w-24" />
           <p id="ticket-venue" className="tracking-[0.15em] opacity-60">
             Dónde
           </p>
@@ -327,8 +321,9 @@ function Ticket({
             className="group border-ink focus-visible:outline-ink mt-2 flex items-center justify-between gap-4 border-y-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-4"
           >
             <span className="min-w-0">
-              <span className="font-display font-stretch-condensed block text-[clamp(2rem,10vw,3rem)] leading-[0.9] font-extrabold">
+              <span className="font-display font-stretch-condensed relative inline-block text-[clamp(2rem,10vw,3rem)] leading-[0.9] font-extrabold">
                 {event.venue}
+                <Circle className="text-accent absolute -inset-x-4 -inset-y-3 h-[calc(100%+1.5rem)] w-[calc(100%+2rem)]" />
               </span>
               <span className="mt-2 block opacity-60">
                 {event.address && <span className="block">{event.address}</span>}
@@ -344,9 +339,16 @@ function Ticket({
 
         {event.lineup.length > 0 && (
           <section className="mt-8" aria-labelledby="ticket-lineup">
-            <p id="ticket-lineup" className="tracking-[0.15em] opacity-60">
-              Lineup
-            </p>
+            <div className="flex items-end justify-between gap-4">
+              <p id="ticket-lineup" className="tracking-[0.15em] opacity-60">
+                Lineup
+              </p>
+              <span aria-hidden className="flex items-center gap-2">
+                <Scribble shape="smiley" className="text-aura size-9 -rotate-6" />
+                <Star seed={11} className="text-accent size-7 -rotate-12" />
+                <Blob seed={5} className="text-highlighter size-8" />
+              </span>
+            </div>
             <ol className="divide-ink/20 border-ink mt-2 divide-y-2 border-t-2">
               {event.lineup.map((set, i) => (
                 <li
@@ -372,18 +374,31 @@ function Ticket({
         />
         {!soldOut && <TicketCheckout tiers={event.tiers} action={action} />}
 
-        <div data-ticket-stub className={cn(!soldOut && "mt-8")}>
+        {/* El talón chico, lo primero que asoma de la máquina: la edición grande con
+            resaltador, el código de barras y la fecha con el lugar. Si se agotó, lleva el
+            sello encima. */}
+        <div data-ticket-stub className={cn("relative", !soldOut && "mt-8")}>
           {!soldOut && <ReceiptRule className="mt-0" />}
-          <dl>
-            {/* "Desde" solo si hay varios lotes con precios distintos. */}
-            <ReceiptRow label={soldOut ? "Entradas" : event.tiers.length > 1 ? "Desde" : "Entrada"}>
-              {soldOut ? "Agotado" : PRICE_FORMAT.format(event.price)}
-            </ReceiptRow>
-          </dl>
-          <Barcode seed={event.slug} className="mt-4 h-14 w-full sm:h-16" />
-          <p className="mt-3 text-center tracking-[0.15em] opacity-70">
-            QR al mail · uno por persona · con DNI
+          <div className="flex items-center gap-4">
+            <p className="font-display font-stretch-condensed shrink-0 text-5xl leading-[0.8] font-extrabold sm:text-6xl">
+              <Highlight seed={7}>{edition}</Highlight>
+            </p>
+            <Barcode seed={event.slug} className="h-12 min-w-0 flex-1 sm:h-14" />
+          </div>
+          <p className="mt-3 flex items-center gap-3 font-bold tracking-[0.2em] whitespace-nowrap">
+            <span>
+              {event.day} {event.month.slice(0, 3)}
+            </span>
+            <span aria-hidden className="border-ink h-0 flex-1 border-t-2 border-dotted" />
+            <span className="truncate">{event.venue}</span>
           </p>
+          <Star seed={19} className="text-aura absolute -top-4 right-[-0.5rem] size-8 rotate-6" />
+          <Scribble shape="sparkle" className="text-accent absolute -bottom-6 left-[38%] size-6" />
+          {soldOut && (
+            <p className="border-accent text-accent font-display font-stretch-expanded pointer-events-none absolute top-1/2 left-1/2 -translate-1/2 rotate-[-8deg] rounded-md border-[3px] px-3 text-2xl font-extrabold tracking-tight mix-blend-multiply">
+              Agotado
+            </p>
+          )}
         </div>
       </div>
 

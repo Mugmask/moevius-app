@@ -1,29 +1,24 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { Wordmark } from "@/components/brand";
+import { PaperSlip } from "@/components/paper-slip";
 import { getStaff } from "@/lib/staff";
 
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Staff · Moevius", robots: { index: false } };
 
+/** El login del staff, en el mismo papel que las demás pantallas sueltas. */
 export default async function LoginPage() {
   const staff = await getStaff();
   if (staff) redirect(staff.role === "admin" ? "/admin" : "/door");
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
-      <Wordmark />
-      <div className="border-border bg-card shadow-hard w-full max-w-sm rounded-3xl border p-8">
-        <h1 className="font-display font-stretch-expanded font-extrabold text-3xl tracking-tight uppercase">
-          Staff
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm font-medium">
-          Entrá con tu mail y contraseña. Si no tenés cuenta, pedísela al admin.
-        </p>
+    <main className="flex flex-1 flex-col">
+      <PaperSlip label="Staff" title="Entrá al panel" seed="staff">
+        <p>Entrá con tu mail y contraseña. Si no tenés cuenta, pedísela al admin.</p>
         <LoginForm />
-      </div>
+      </PaperSlip>
     </main>
   );
 }

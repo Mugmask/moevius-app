@@ -1,8 +1,9 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
 import { useActionState } from "react";
 
-import { Field, Pill } from "@/components/brand";
+import { INK_BUTTON, PaperField } from "@/components/paper-slip";
 
 import { login, type LoginState } from "./actions";
 
@@ -11,7 +12,7 @@ export function LoginForm() {
 
   return (
     <form action={action} className="mt-6 flex flex-col gap-4">
-      <Field
+      <PaperField
         id="email"
         name="email"
         type="email"
@@ -20,7 +21,7 @@ export function LoginForm() {
         required
         defaultValue={state.email}
       />
-      <Field
+      <PaperField
         id="password"
         name="password"
         type="password"
@@ -29,13 +30,14 @@ export function LoginForm() {
         required
       />
       {state.error && (
-        <p role="alert" className="text-sm font-bold">
+        <p role="alert" className="text-accent text-sm font-semibold">
           {state.error}
         </p>
       )}
-      <Pill type="submit" disabled={pending} className="justify-center">
+      <button type="submit" disabled={pending} className={INK_BUTTON}>
         {pending ? "Entrando…" : "Entrar"}
-      </Pill>
+        <ArrowUpRight aria-hidden className="text-primary size-5" />
+      </button>
     </form>
   );
 }

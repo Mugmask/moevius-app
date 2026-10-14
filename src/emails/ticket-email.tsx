@@ -1,8 +1,8 @@
 import {
   Body,
   Container,
-  Head,
   Heading,
+  Head,
   Hr,
   Html,
   Img,
@@ -14,10 +14,16 @@ import {
 
 // Aproximaciones en hex de los tokens oklch de globals.css: los clientes de mail
 // no entienden oklch.
-const INK = "#1c1b18";
-const PAPER = "#f4f3ee";
-const BRAND = "#7cf25c";
+export const INK = "#110f0e";
+const PAPER = "#f6f3ed";
+const ORANGE = "#ff7f16";
+const HIGHLIGHTER = "#fcee28";
 const MUTED = "#6b6a63";
+
+/** El logo va adjunto inline (PNG, ver `logoPng`): el HTML lo pide con este cid. */
+export const LOGO_CID = "moevius-logo";
+
+const MONO = "'Courier New', Courier, monospace";
 
 export type TicketEmailProps = {
   buyerName: string;
@@ -30,6 +36,10 @@ export type TicketEmailProps = {
   tickets: { code: string; ticketType: string; url: string; cid: string }[];
 };
 
+/**
+ * El mail de las entradas, con la identidad del ticket de papel de la web: el logo en
+ * tinta, la fecha con resaltador y cada QR en un talón con borde de troquel.
+ */
 export function TicketEmail({
   buyerName,
   day,
@@ -52,23 +62,35 @@ export function TicketEmail({
         style={{ backgroundColor: PAPER, color: INK, fontFamily: "Helvetica, Arial, sans-serif" }}
       >
         <Container style={{ maxWidth: 520, padding: "32px 20px" }}>
-          <Text style={{ fontSize: 14, fontWeight: 700, letterSpacing: 1, margin: 0 }}>
-            MOEVIUS
-          </Text>
+          <Img src={`cid:${LOGO_CID}`} alt="Moevius" width={280} height={75} />
           <Heading
             style={{
-              fontSize: 40,
-              lineHeight: "40px",
-              margin: "16px 0 0",
+              fontSize: 36,
+              lineHeight: "44px",
+              margin: "24px 0 0",
               textTransform: "uppercase",
             }}
           >
-            {day} {month}
+            {/* Mes corto: en una línea, así el resaltador no se corta en el celu. */}
+            <span style={{ backgroundColor: HIGHLIGHTER, padding: "0 6px", whiteSpace: "nowrap" }}>
+              {day} {month.slice(0, 3)}
+            </span>
           </Heading>
-          <Text style={{ fontSize: 16, fontWeight: 700, margin: "12px 0 0" }}>
+          <Text
+            style={{
+              fontFamily: MONO,
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: 1,
+              margin: "12px 0 0",
+              textTransform: "uppercase",
+            }}
+          >
             {venue} · {neighborhood}
           </Text>
-          <Text style={{ fontSize: 14, color: MUTED, margin: "4px 0 0" }}>{time}</Text>
+          <Text style={{ fontFamily: MONO, fontSize: 14, color: MUTED, margin: "4px 0 0" }}>
+            {time}
+          </Text>
 
           <Text style={{ fontSize: 16, lineHeight: "24px", margin: "24px 0" }}>
             Hola {buyerName}, ya está: acá tenés {ticketCountLabel}. Cada QR deja pasar a una
@@ -81,15 +103,21 @@ export function TicketEmail({
               key={ticket.code}
               style={{
                 backgroundColor: "#ffffff",
-                border: `2px solid ${INK}`,
-                borderRadius: 16,
+                border: `2px dashed ${INK}`,
                 marginBottom: 16,
                 padding: 20,
                 textAlign: "center",
               }}
             >
               <Text
-                style={{ fontSize: 12, fontWeight: 700, margin: 0, textTransform: "uppercase" }}
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                  margin: 0,
+                  textTransform: "uppercase",
+                }}
               >
                 Entrada {i + 1} de {tickets.length} · {ticket.ticketType}
               </Text>
@@ -108,7 +136,7 @@ export function TicketEmail({
 
           <Section
             style={{
-              backgroundColor: BRAND,
+              backgroundColor: ORANGE,
               border: `2px solid ${INK}`,
               borderRadius: 16,
               padding: 16,

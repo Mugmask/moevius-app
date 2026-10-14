@@ -1,3 +1,6 @@
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { cn } from "@/lib/utils";
 
 /** Botón principal sobre el papel del ticket: tinta, ancho completo, en mono. */
@@ -17,53 +20,71 @@ export function PaperSlip({
   label,
   title,
   seed,
+  back = false,
   children,
 }: {
   label: string;
   title: string;
   /** Para el código de barras: el mismo seed da siempre el mismo. */
   seed: string;
+  /** "Volver a la fiesta" arriba del papel, como en las páginas legales. */
+  back?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="relative isolate flex flex-1 items-center justify-center px-4 py-16 sm:py-24">
       {/* Luz de la pista atrás del papel (degradado quieto, con grano: ver la home). */}
       <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="glow text-accent absolute top-1/4 left-1/2 -z-20 size-[120vw] max-w-[48rem] -translate-x-1/2 rounded-full opacity-25" />
+        <div className="glow text-aura absolute top-1/4 left-1/2 -z-20 size-[120vw] max-w-[48rem] -translate-x-1/2 rounded-full opacity-40" />
       </div>
 
-      <article className="text-ink relative w-full max-w-[28rem] rotate-[-0.6deg] sm:max-w-[32rem]">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 shadow-[0_24px_30px_oklch(0_0_0/0.55)]"
-        />
-        <div className="bg-paper paper-crumple px-5 pt-8 pb-6 font-mono text-[0.8125rem] leading-relaxed uppercase sm:px-10 sm:pt-10 sm:text-sm">
-          <p className="font-bold tracking-[0.2em] opacity-60">{label}</p>
-          <h1 className="font-display font-stretch-condensed mt-3 text-[clamp(2.25rem,11vw,3.25rem)] leading-[0.9] font-extrabold">
-            {title}
-          </h1>
-          <div className="mt-4 font-sans text-base leading-snug font-medium normal-case">
-            {children}
+      <div className="w-full max-w-[28rem] sm:max-w-[32rem]">
+        {back && (
+          <Link
+            href="/"
+            className="label-mono text-muted-foreground hover:text-foreground mb-4 inline-flex min-h-11 items-center gap-2 transition-colors"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            Volver a la fiesta
+          </Link>
+        )}
+        <article className="text-ink relative w-full rotate-[-0.6deg]">
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 shadow-[0_24px_30px_oklch(0_0_0/0.55)]"
+          />
+          <div className="bg-paper paper-crumple px-5 pt-8 pb-6 font-mono text-[0.8125rem] leading-relaxed uppercase sm:px-10 sm:pt-10 sm:text-sm">
+            <p className="font-bold tracking-[0.2em] opacity-60">{label}</p>
+            <h1 className="font-display font-stretch-condensed mt-3 text-[clamp(2.25rem,11vw,3.25rem)] leading-[0.9] font-extrabold">
+              {title}
+            </h1>
+            <div className="mt-4 font-sans text-base leading-snug font-medium normal-case">
+              {children}
+            </div>
+            <hr className="border-ink/35 mt-8 border-t-2 border-dashed" />
+            <Barcode seed={seed} className="mt-6 h-12 w-full sm:h-14" />
+            <p className="mt-3 text-center tracking-[0.15em] opacity-70">Moevius · Mar del Plata</p>
           </div>
-          <hr className="border-ink/35 mt-8 border-t-2 border-dashed" />
-          <Barcode seed={seed} className="mt-6 h-12 w-full sm:h-14" />
-          <p className="mt-3 text-center tracking-[0.15em] opacity-70">Moevius · Mar del Plata</p>
-        </div>
-        <div aria-hidden className="torn-edge absolute inset-x-0 top-full h-3.5" />
-      </article>
+          <div aria-hidden className="torn-edge absolute inset-x-0 top-full h-3.5" />
+        </article>
+      </div>
     </div>
   );
 }
 
-/** Campo para escribir sobre el papel: la etiqueta arriba, la caja y, si hay, la ayuda abajo. */
+/**
+ * Campo para escribir sobre el papel: la etiqueta arriba, la caja y, si hay, la ayuda
+ * abajo. `className` va al contenedor (para ubicarlo en una grilla).
+ */
 export function PaperField({
   label,
   id,
   hint,
+  className,
   ...props
 }: React.ComponentProps<"input"> & { label: string; id: string; hint?: string }) {
   return (
-    <div>
+    <div className={className}>
       <label htmlFor={id} className="block text-xs font-bold tracking-[0.1em] sm:text-sm">
         {label}
       </label>

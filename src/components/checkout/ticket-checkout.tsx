@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { useSecondsLeft } from "@/components/countdown";
+import { Blob, Scribble, Squiggle } from "@/components/doodles";
 import { MpPayButton } from "@/components/mp-pay-button";
 import { INK_BUTTON, PaperField } from "@/components/paper-slip";
 import { ReceiptRule } from "@/components/receipt";
@@ -71,13 +72,24 @@ function CheckoutStub({
       <input type="hidden" name="ticketTypeId" value={tier?.id ?? ""} />
       <input type="hidden" name="quantity" value={validQuantity} />
 
-      <h3 className="font-display font-stretch-condensed text-3xl leading-none font-extrabold sm:text-4xl">
+      <h3 className="font-display font-stretch-condensed relative inline-block text-3xl leading-none font-extrabold sm:text-4xl">
         Comprá tu entrada
+        <Squiggle className="text-accent absolute inset-x-0 -bottom-3 h-2.5 w-full" />
       </h3>
-      <p className="mt-2 font-sans text-sm leading-snug normal-case opacity-70 sm:text-base">
+      <Scribble shape="spiral" className="text-aura absolute -top-10 right-0 size-10 rotate-45" />
+      <Blob seed={27} className="text-highlighter absolute -top-8 right-12 size-6" />
+      <p className="mt-4 font-sans text-sm leading-snug normal-case opacity-70 sm:text-base">
         Completá tus datos, elegí cuántas y reservá. Pagás en Mercado Pago y la entrada te llega por
         mail.
       </p>
+      {/* Para quien ya compró y vuelve a buscar su entrada: donde la va a buscar. */}
+      <Link
+        href="/mis-entradas"
+        className="decoration-ink/40 hover:decoration-ink mt-3 inline-flex min-h-10 items-center gap-1.5 font-sans text-sm font-semibold normal-case underline decoration-2 underline-offset-4 sm:text-base"
+      >
+        ¿Ya compraste? Recuperá tu entrada
+        <ArrowUpRight aria-hidden className="size-4" />
+      </Link>
 
       <fieldset className="mt-8">
         <StepLegend step={1}>Tus datos</StepLegend>

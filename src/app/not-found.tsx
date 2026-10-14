@@ -13,7 +13,11 @@ export default function NotFound() {
         <PaperSlip label="Error 404 · Sin ticket" title="Acá no hay fiesta" seed="404">
           <p>
             La página que buscás no existe o el link ya no funciona. Si venías a buscar tu entrada,
-            abrila desde el mail de la compra.
+            abrila desde el mail de la compra o pedila de nuevo en{" "}
+            <Link href="/mis-entradas" className="font-semibold underline underline-offset-4">
+              Mis entradas
+            </Link>
+            .
           </p>
           <Link href="/" className={cn(INK_BUTTON, "mt-6")}>
             Ir a la fiesta

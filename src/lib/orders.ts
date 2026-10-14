@@ -2,9 +2,11 @@ import "server-only";
 
 import { render } from "react-email";
 
-import { TicketEmail } from "@/emails/ticket-email";
+import { INK, LOGO_CID, TicketEmail } from "@/emails/ticket-email";
 import { formatEventDates } from "@/lib/events";
 import { sendMail } from "@/lib/mailer";
+import { TEST_MODE } from "@/lib/environment";
+import { logoPng } from "@/lib/logo-png";
 import { getMpOrder, refundMpOrder } from "@/lib/mercadopago";
 import { qrPng, ticketUrl } from "@/lib/qr";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -249,11 +251,60 @@ export async function sendTicketsEmailWithRetry(orderId: string) {
   for (const [attempt, delay] of delaysMs.entries()) {
     if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
     try {
-      return await sendTicketsEmail(orderId);
+      await sendTicketsEmail(orderId);
+      return true;
     } catch (err) {
       console.error("sendTicketsEmail", { orderId, attempt: attempt + 1, err });
     }
   }
+  return false;
+}
+
+/** Cada cuánto se puede reenviar el mail de una misma compra desde /mis-entradas. */
+const RESEND_COOLDOWN_MINUTES = 10;
+
+/**
+ * "Mis entradas": reenvía el mail de cada compra pagada con ese mail, para fechas que
+ * todavía no terminaron y de este entorno (prueba o real). Las entradas solo llegan a la
+ * casilla: quien sabe el mail de otro no las ve. Cada compra se reenvía como mucho una
+ * vez cada RESEND_COOLDOWN_MINUTES, así nadie le llena la casilla a otro: el reclamo es
+ * un update condicional sobre `email_sent_at`, atómico aunque lleguen dos pedidos juntos.
+ */
+export async function resendTicketsForEmail(email: string) {
+  const supabase = createAdminClient();
+  const { data: orders, error } = await supabase
+    .from("orders")
+    .select("id, email_sent_at, event:events!inner(ends_at, is_test)")
+    .eq("buyer_email", email)
+    .eq("status", "paid")
+    .eq("event.is_test", TEST_MODE)
+    .gt("event.ends_at", new Date().toISOString());
+  if (error) throw error;
+
+  // En paralelo: cada compra puede tardar varios segundos en reintentos (SMTP) y todo
+  // corre en el `after` de una sola función.
+  const cutoff = new Date(Date.now() - RESEND_COOLDOWN_MINUTES * 60_000).toISOString();
+  await Promise.all(
+    orders.map(async (order) => {
+      const { data: claimed, error: claimError } = await supabase
+        .from("orders")
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq("id", order.id)
+        .or(`email_sent_at.is.null,email_sent_at.lt.${cutoff}`)
+        .select("id");
+      if (claimError) throw claimError;
+      if (claimed.length === 0) return;
+
+      if (!(await sendTicketsEmailWithRetry(order.id))) {
+        // No salió: vuelve a como estaba, así el admin la sigue viendo si nunca se mandó.
+        const { error } = await supabase
+          .from("orders")
+          .update({ email_sent_at: order.email_sent_at })
+          .eq("id", order.id);
+        if (error) console.error("resendTicketsForEmail: no se pudo restaurar", { order, error });
+      }
+    }),
+  );
 }
 
 export async function sendTicketsEmail(orderId: string) {
@@ -285,13 +336,14 @@ export async function sendTicketsEmail(orderId: string) {
     }),
   );
 
-  const inlineImages = await Promise.all(
-    tickets.map(async (t) => ({
+  const inlineImages = await Promise.all([
+    logoPng(INK).then((content) => ({ cid: LOGO_CID, filename: "moevius.png", content })),
+    ...tickets.map(async (t) => ({
       cid: t.cid,
       filename: `entrada-${t.cid}.png`,
       content: await qrPng(t.code),
     })),
-  );
+  ]);
 
   // No hace falta deduplicar: solo manda quien recibió `justPaid` (una vez por orden)
   // o el admin a mano desde /admin.
