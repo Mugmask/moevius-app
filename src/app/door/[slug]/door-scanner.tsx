@@ -1,9 +1,9 @@
 "use client";
 
 import { type IScannerError, Scanner } from "@yudiel/react-qr-scanner";
+import { Check, X } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 
-import { Pill } from "@/components/brand";
 import { TIME_FORMAT } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -69,33 +69,59 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
 
   return (
     <div className="relative flex flex-1 flex-col">
-      <div className="relative aspect-square w-full overflow-hidden bg-black sm:mx-auto sm:max-w-md">
-        <Scanner
-          onScan={(codes) => codes[0] && validate(codes[0].rawValue)}
-          formats={["qr_code"]}
-          // Sin esto, el mismo QR no dispara dos veces seguidas: si la primera vez
-          // falló la red, no se podría reintentar. Mientras hay resultado está pausado.
-          allowMultiple
-          scanDelay={RESULT_DISPLAY_MS}
-          paused={Boolean(result) || pending}
-          sound={false}
-          constraints={{ facingMode: "environment" }}
-          onError={(error) => setCameraError(cameraErrorMessage(error))}
-        />
-        {cameraError && (
-          <p
-            role="alert"
-            className="bg-foreground text-background absolute inset-0 flex items-center justify-center p-8 text-center font-bold"
+      <div className="mx-auto w-full max-w-md px-4 pt-4">
+        <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-black">
+          <Scanner
+            onScan={(codes) => codes[0] && validate(codes[0].rawValue)}
+            formats={["qr_code"]}
+            // Sin esto, el mismo QR no dispara dos veces seguidas: si la primera vez
+            // falló la red, no se podría reintentar. Mientras hay resultado está pausado.
+            allowMultiple
+            scanDelay={RESULT_DISPLAY_MS}
+            paused={Boolean(result) || pending}
+            sound={false}
+            constraints={{ facingMode: "environment" }}
+            // El marco lo dibujamos nosotros; la linterna sí (adentro de un boliche ayuda).
+            components={{ finder: false, torch: true }}
+            onError={(error) => setCameraError(cameraErrorMessage(error))}
+          />
+          {/* Marco de apuntar: cuatro esquinas naranjas; laten mientras valida. */}
+          <div
+            aria-hidden
+            className={cn("pointer-events-none absolute inset-[14%]", pending && "animate-pulse")}
           >
-            {cameraError}
-          </p>
-        )}
+            {[
+              "top-0 left-0 border-t-4 border-l-4 rounded-tl-2xl",
+              "top-0 right-0 border-t-4 border-r-4 rounded-tr-2xl",
+              "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-2xl",
+              "bottom-0 right-0 border-b-4 border-r-4 rounded-br-2xl",
+            ].map((corner) => (
+              <span key={corner} className={cn("border-primary absolute size-12", corner)} />
+            ))}
+          </div>
+          {cameraError && (
+            <p
+              role="alert"
+              className="bg-paper text-ink absolute inset-0 flex items-center justify-center p-8 text-center font-semibold"
+            >
+              {cameraError}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mx-auto flex w-full max-w-md flex-col gap-4 p-4">
-        <p className="text-muted-foreground text-center text-sm font-bold">
-          {pending ? "Validando…" : `Apuntá al QR · ${checkIns} ingresos en este celu`}
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="label-mono text-muted-foreground" aria-live="polite">
+            {pending ? "Validando…" : "Apuntá al QR"}
+          </p>
+          <p className="label-mono border-foreground/20 rounded-full border-2 px-3 py-1">
+            <span className="text-foreground font-bold tabular-nums">{checkIns}</span>{" "}
+            <span className="text-muted-foreground">
+              {checkIns === 1 ? "ingreso" : "ingresos"} en este celu
+            </span>
+          </p>
+        </div>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -114,49 +140,53 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
             spellCheck={false}
             enterKeyHint="go"
             // 16px: con menos, iOS hace zoom al tocar el input.
-            className="border-border bg-card h-12 min-w-0 flex-1 rounded-full border px-4 text-base font-medium"
+            className="border-input bg-foreground/5 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30 h-12 min-w-0 flex-1 rounded-full border px-4 text-base font-medium outline-none focus-visible:ring-4"
           />
           <button
             type="submit"
-            className="bg-foreground text-background h-12 rounded-full px-5 text-base font-bold"
+            className="label-mono border-foreground/30 hover:border-foreground h-12 rounded-full border-2 px-5 font-bold transition-colors"
           >
             Validar
           </button>
         </form>
       </div>
 
+      {/* El resultado tapa todo: verde si entra, rojo si no. Se lee de lejos y a oscuras. */}
       {result && (
         <button
           type="button"
           onClick={dismiss}
           className={cn(
-            "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-8 text-center",
-            result.result === "ok"
-              ? "bg-primary text-primary-foreground"
-              : "bg-destructive text-white",
+            "fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 p-8 text-center",
+            result.result === "ok" ? "bg-go text-go-foreground" : "bg-destructive text-white",
           )}
         >
-          <span className="font-display font-stretch-expanded text-5xl leading-none font-extrabold text-balance uppercase">
+          <span className="grid size-24 place-items-center rounded-full border-[6px] border-current">
+            {result.result === "ok" ? (
+              <Check aria-hidden className="size-14" strokeWidth={3} />
+            ) : (
+              <X aria-hidden className="size-14" strokeWidth={3} />
+            )}
+          </span>
+          <span className="font-display font-stretch-condensed text-[clamp(3.5rem,20vw,8rem)] leading-[0.85] font-extrabold text-balance uppercase">
             {RESULT_MESSAGES[result.result]}
           </span>
           {result.buyer_name && (
-            <span className="text-2xl font-bold">
-              {result.buyer_name} · {result.ticket_type}
+            <span className="font-display font-stretch-condensed text-3xl leading-tight font-extrabold">
+              {result.buyer_name}
+              <span className="block font-mono text-base font-bold tracking-[0.15em] uppercase opacity-80">
+                {result.ticket_type}
+              </span>
             </span>
           )}
           {result.result === "already_used" && result.checked_in_at && (
-            <span className="text-lg font-bold">
+            <span className="font-mono text-lg font-bold tracking-[0.1em] uppercase">
               Escaneada a las {TIME_FORMAT.format(new Date(result.checked_in_at))}
             </span>
           )}
-          <Pill
-            tone="outline"
-            render={<span />}
-            nativeButton={false}
-            className="mt-6 border-current text-current"
-          >
+          <span className="label-mono mt-4 inline-flex min-h-12 items-center rounded-full border-2 border-current px-6 font-bold">
             Siguiente
-          </Pill>
+          </span>
         </button>
       )}
     </div>

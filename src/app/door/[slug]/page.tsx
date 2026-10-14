@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,6 +13,7 @@ import { DoorScanner } from "./door-scanner";
 
 export const metadata: Metadata = { title: "Puerta · Moevius", robots: { index: false } };
 
+/** El escáner de una fecha: barra chica arriba (volver y la fecha) y la cámara. */
 export default async function DoorEventPage({ params }: PageProps<"/door/[slug]">) {
   await requireStaff();
   const { slug } = await params;
@@ -30,12 +32,18 @@ export default async function DoorEventPage({ params }: PageProps<"/door/[slug]"
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-border bg-card flex items-center justify-between border-b px-4 py-3">
-        <Link href="/door" className="text-sm font-bold">
-          ← Fechas
+      <header className="border-border flex items-center justify-between gap-3 border-b px-4 py-2">
+        <Link
+          href="/door"
+          className="label-mono text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-2 transition-colors"
+        >
+          <ArrowLeft aria-hidden className="size-4" />
+          Fechas
         </Link>
-        <p className="font-display font-stretch-expanded font-extrabold tracking-tight uppercase">
-          {day} {month}
+        <p className="font-display font-stretch-condensed text-2xl leading-none font-extrabold uppercase">
+          <span className="bg-highlighter text-ink px-1">
+            {day} {month.slice(0, 3)}
+          </span>
         </p>
       </header>
       <DoorScanner action={checkIn.bind(null, event.id)} />
