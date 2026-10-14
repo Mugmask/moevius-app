@@ -1,10 +1,12 @@
-import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 import { startCheckout } from "@/components/checkout/actions";
 import { TicketCheckout } from "@/components/checkout/ticket-checkout";
 import { MarkerFilter, Star } from "@/components/doodles";
+import { MoeviusLogo } from "@/components/logo";
 import { PageLoader } from "@/components/page-loader";
+import { PullHint } from "@/components/pull-hint";
 import { Barcode } from "@/components/paper-slip";
 import { ReceiptRow, ReceiptRule } from "@/components/receipt";
 import { SiteFooter } from "@/components/site-chrome";
@@ -56,6 +58,7 @@ export default async function Home() {
               <Ticket event={event} action={startCheckout.bind(null, event.slug)} />
             </TicketPull>
           </div>
+          <PullHint soldOut={event.availability === "sold-out"} />
         </section>
       </main>
       <SiteFooter />
@@ -126,8 +129,8 @@ function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
 }
 
 /**
- * Encabezado de la página, centrado sobre la máquina, como la cabeza de un flyer: la
- * edición, la fecha enorme, el lugar y el horario, y la seña de que se tira del ticket.
+ * Encabezado de la página, centrado sobre la máquina, como la cabeza de un flyer: el logo
+ * grande, la fecha, la edición y el lugar con el horario. La seña de bajar va abajo (PullHint).
  */
 function TicketHeading({ event }: { event: EventListing }) {
   const soldOut = event.availability === "sold-out";
@@ -135,13 +138,21 @@ function TicketHeading({ event }: { event: EventListing }) {
   const date = `${event.day} ${event.month.slice(0, 3)}`;
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="label-mono text-foreground">{event.title}</p>
-      <h1 className="font-display font-stretch-condensed mt-3 text-[clamp(3.75rem,19vw,8.5rem)] leading-[0.82] font-extrabold tracking-[-0.02em] uppercase">
+      <h1>
         <span className="sr-only">
           Entradas {event.title}, {event.day} de {event.month}
         </span>
-        <span aria-hidden>{date}</span>
+        <LogoFx className="mx-auto w-[min(88vw,36rem)]" />
       </h1>
+      <p
+        aria-hidden
+        className="font-display font-stretch-condensed mt-5 flex items-baseline justify-center gap-3 text-[clamp(2.25rem,11vw,4.5rem)] leading-[0.85] font-extrabold uppercase"
+      >
+        {date}
+      </p>
+      <p className="label-mono text-foreground mt-3">
+        {event.title.replace(/^moevius\s*/i, "") || event.title}
+      </p>
       <p className="label-mono text-muted-foreground mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         <span>{event.venue}</span>
         <span aria-hidden>·</span>
@@ -149,14 +160,9 @@ function TicketHeading({ event }: { event: EventListing }) {
         <span aria-hidden>·</span>
         <span className="tabular-nums">{event.time.replace(" — ", " → ")}</span>
       </p>
-      {soldOut ? (
+      {soldOut && (
         <p className="text-muted-foreground mx-auto mt-6 max-w-md text-lg text-pretty">
           Esta edición se agotó. Igual te dejamos el ticket con toda la info.
-        </p>
-      ) : (
-        <p className="label-mono text-foreground mt-8 inline-flex items-center gap-2">
-          Tirá del ticket para comprar
-          <ArrowDown aria-hidden className="text-primary size-4 animate-bounce" />
         </p>
       )}
       {soldOut && (
@@ -166,6 +172,23 @@ function TicketHeading({ event }: { event: EventListing }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * El logo grande de la noche, con aberración cromática: dos copias en rojo y lima corridas
+ * apenas, en `screen` sobre el fondo, que se mueven lento (`logo-ghost-*` en globals.css,
+ * solo `transform`). Atrás, una luz roja. Con animaciones reducidas, las copias quedan
+ * quietas.
+ */
+function LogoFx({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={cn("relative isolate block", className)}>
+      <span className="glow text-accent pointer-events-none absolute inset-[-25%_-10%] -z-10 rounded-full opacity-35" />
+      <MoeviusLogo className="logo-ghost-a text-accent absolute inset-0 mix-blend-screen" />
+      <MoeviusLogo className="logo-ghost-b text-primary absolute inset-0 opacity-70 mix-blend-screen" />
+      <MoeviusLogo className="text-foreground relative" />
+    </span>
   );
 }
 
@@ -262,8 +285,8 @@ function Ticket({
             <span className="border-ink h-0 flex-1 border-t-2" />
             <span>{event.year}</span>
           </div>
-          <h2 className="font-display font-stretch-expanded mt-3 text-center text-[clamp(2.75rem,12.5vw,4.75rem)] leading-[0.85] font-extrabold tracking-[-0.03em]">
-            <span aria-hidden>Moevius</span>
+          <h2 className="mt-4">
+            <MoeviusLogo className="mx-auto w-full" />
             <span className="sr-only">{event.title}</span>
           </h2>
         </header>
@@ -381,8 +404,9 @@ function ComingSoon() {
       <Aura />
       <div className="mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-5 pt-16 pb-16 lg:pb-24">
         <p className="label-mono">Próxima edición · A confirmar</p>
-        <h1 className="font-display font-stretch-expanded mt-6 text-[clamp(3rem,16vw,11rem)] leading-[0.86] font-extrabold tracking-[-0.03em] uppercase">
-          Moevius
+        <h1 className="mt-6">
+          <span className="sr-only">Moevius</span>
+          <LogoFx className="w-[min(92vw,56rem)]" />
         </h1>
         <p className="mt-6 max-w-md text-lg text-balance">
           Estamos armando la próxima. Dejanos tu mail y te avisamos apenas abrimos la venta.

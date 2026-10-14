@@ -67,6 +67,12 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   (`ticket-pull-driven` en `globals.css`) que corre en el hilo del scroll. `TicketPull`
   solo mide (con `ResizeObserver`) y escribe los keyframes en px y el `animation-range`.
   Sin soporte (iOS < 26, Firefox) hace lo mismo desde JS, también 1:1.
+- Detección del camino nativo: `"ScrollTimeline" in window`, **no** `CSS.supports("animation-timeline", …)`:
+  Chrome 155 aplica la propiedad en las hojas de estilo pero ahí devuelve false (hasta con
+  `auto`), y el ticket caía al respaldo de JS sin que se notara.
+- La seña "Bajá para sacar tu ticket" (`PullHint`) va fija abajo en el hueco de la primera
+  pantalla y la apagan dos IntersectionObserver (el borde del papel llega a la franja de abajo,
+  o ya no estás en la primera pantalla). Nada por scroll.
 - La "vida" del papel también es del navegador: `ticket-sway` (se mece < 1° atado al
   mismo tramo del scroll, gira desde la ranura; solo con soporte nativo) y `ticket-drop`
   (caída al cargar, cuando cargan las fuentes; no con el ancla). Nada de movimiento por

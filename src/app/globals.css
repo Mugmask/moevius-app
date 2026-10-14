@@ -297,6 +297,51 @@
   }
 }
 
+/*
+ * Aberración cromática del logo grande (ver LogoFx): las copias de color corridas apenas
+ * y, con movimiento, yendo y viniendo lento. Solo `transform`: no repinta.
+ */
+.logo-ghost-a {
+  transform: translate(-0.7%, 1.2%);
+}
+
+.logo-ghost-b {
+  transform: translate(0.7%, -1.2%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo-ghost-a {
+    animation: logo-ghost-a 7s ease-in-out infinite;
+  }
+
+  .logo-ghost-b {
+    animation: logo-ghost-b 9s ease-in-out infinite;
+  }
+}
+
+@keyframes logo-ghost-a {
+  50% {
+    transform: translate(-1.4%, -0.6%);
+  }
+}
+
+@keyframes logo-ghost-b {
+  50% {
+    transform: translate(1.2%, 0.8%);
+  }
+}
+
+/* La seña de bajar (ver PullHint): solo existe cuando el ticket se tironea. */
+.pull-hint {
+  display: none;
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .pull-hint {
+    display: flex;
+  }
+}
+
 /* El loader de la home (ver PageLoader): sin JS nunca se iría, así que solo existe con JS. */
 .page-loader {
   display: none;
