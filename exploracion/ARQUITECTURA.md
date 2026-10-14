@@ -46,7 +46,7 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
 
 - No hay grilla de fechas: la home (`getFeaturedEvent`) es la próxima fecha publicada,
   presentada como un ticket que sale de una máquina al scrollear. La compra se llena en el
-  talón (`ticket-checkout.tsx`, un solo paso: lote, cantidad y datos → reserva → botón a
+  talón (`ticket-checkout.tsx`, un solo paso: datos, lote y cantidad → reserva → botón a
   MP). `/#tickets` es el ancla del talón y `/events/[slug]` redirige ahí. `getEventBySlug`
   sigue: lo usa `startCheckout` para validar lote y precio.
 - Turnstile en el talón va `compact` + `interaction-only`: el widget normal (300px) no entra
@@ -109,7 +109,7 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
 - La máquina y el papel son CSS puro (`chassis`, `slot-*`, `paper-crumple`, `torn-edge`,
   `ticket-notch-*` en `globals.css`): no suman imágenes a la carga en el celu.
 - `body` y las secciones usan `overflow-clip` y no `hidden`: `hidden` las vuelve
-  contenedores de scroll y rompe los `sticky` (la máquina, el header).
+  contenedores de scroll y rompe los `sticky` (la máquina).
 - `BRAND` en `lib/brand-colors.ts` replica los tokens en hex para manifest, íconos y
   `theme-color`: si cambia un token, cambiarlo ahí también.
 - Inputs con `text-base` (16px): con menos, iOS hace zoom al enfocar.
@@ -145,3 +145,15 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   llamada. `WebhookSignatureValidator` no pasa el `data.id` a minúsculas: hacerlo antes.
 - Sandbox: credenciales `APP_USR-` del vendedor de prueba; acepta mails de comprador reales.
   Tarjeta de prueba aprobada: titular `APRO`.
+
+## Legal (términos, privacidad, arrepentimiento)
+
+> 🔖 Sello: 2026-10-14
+
+- Los datos del organizador (nombre, mail y, opcionales, CUIT y domicilio) viven en `src/lib/legal.ts`
+  y los usan el footer, `/terminos`, `/privacidad` y `/arrepentimiento`. Tienen placeholders:
+  **completarlos antes de vender en producción**.
+- El Botón de arrepentimiento (Res. SCI 424/2020) tiene que estar a mano desde la home: va en
+  el footer. El pedido **no se guarda en la base**: manda un mail a `LEGAL.email` y la
+  constancia con el código `ARR-…` al comprador. La devolución y la anulación son a mano.
+- El footer lleva el link a la Ventanilla Única de Defensa del Consumidor.

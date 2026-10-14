@@ -46,11 +46,10 @@ export function Burst({ className }: { className?: string }) {
   );
 }
 
-/** `spin`: el isotipo gira mientras se scrollea la página (ver `scroll-spin`). */
-export function Wordmark({ className, spin = false }: { className?: string; spin?: boolean }) {
+export function Wordmark({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <Burst className={cn("size-5", spin && "scroll-spin")} />
+      <Burst className="size-5" />
       <span className="font-display font-stretch-expanded text-base font-extrabold tracking-tight">
         MOEVIUS
       </span>
