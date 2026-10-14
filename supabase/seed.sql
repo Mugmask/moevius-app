@@ -1,8 +1,9 @@
 -- Datos para el Supabase local (Docker): corre después de las migraciones en cada
 -- `pnpm db:local:reset`. Nunca llega al remoto (`db push` no aplica el seed).
 --
--- Una fecha de prueba siempre en el futuro, con dos lotes (uno chico para probar el
--- agotado y uno normal) y su lineup.
+-- Una fecha de prueba siempre en el futuro, con su lineup y un solo tipo de entrada (como
+-- las primeras fechas reales). Para probar varios lotes o el agotado, sumá filas a
+-- `ticket_types` o bajale el `capacity`.
 
 with fecha as (
   insert into public.events (
@@ -41,6 +42,5 @@ select id, tier.name, tier.price, tier.capacity, tier.max_per_order, tier.sort_o
 from fecha
 cross join (
   values
-    ('Preventa', 8000, 2, 2, 0),
-    ('General', 10000, 50, 4, 1)
+    ('General', 8000, 50, 4, 0)
 ) as tier (name, price, capacity, max_per_order, sort_order);

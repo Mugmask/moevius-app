@@ -23,8 +23,8 @@ const INK_BUTTON =
   "bg-ink text-paper hover:bg-ink/85 focus-visible:ring-ink/30 flex h-14 w-full items-center justify-between gap-3 rounded-full px-6 font-mono text-sm font-bold tracking-wider uppercase outline-none focus-visible:ring-4 active:scale-[0.98] disabled:opacity-50 sm:h-16 sm:px-8 sm:text-base";
 
 /**
- * La compra escrita en el talón del ticket, como un recibo: lote, cantidad, total y los
- * datos del titular. Al reservar, el talón queda sellado con la cuenta regresiva y el
+ * La compra escrita en el talón del ticket, como un recibo: lote (si hay más de uno),
+ * cantidad, total y los datos del titular. Al reservar, el talón queda sellado con la cuenta regresiva y el
  * botón para pagar en Mercado Pago. Si la reserva vence, "Empezar de nuevo" remonta el
  * form. Va dentro del talón del ticket, que pone el mono y las mayúsculas.
  */
@@ -79,62 +79,73 @@ function CheckoutStub({
         <Arrow className="text-accent absolute top-4 right-28 size-9 rotate-[20deg] sm:top-6 sm:right-44 sm:size-11" />
       </div>
 
-      <fieldset className="mt-6">
-        <legend className="sr-only">Lote</legend>
-        <div aria-hidden className="flex justify-between opacity-60">
-          <span>Lote</span>
-          <span>Precio</span>
-        </div>
-        <div className="mt-2 flex flex-col">
-          {tiers.map((t) => {
-            const soldOut = t.available === 0;
-            const selected = t.id === tier?.id;
-            return (
-              <label
-                key={t.id}
-                className={cn(
-                  "has-focus-visible:outline-ink relative -mx-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-sm px-2 has-focus-visible:outline-2",
-                  soldOut && "cursor-not-allowed opacity-40",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="tier"
-                  value={t.id}
-                  checked={selected}
-                  disabled={soldOut}
-                  onChange={() => setTierId(t.id)}
-                  className="sr-only"
-                />
-                {/* La casilla impresa: se rellena con tinta al marcarla. */}
-                <span
-                  aria-hidden
-                  className="border-ink grid size-5 shrink-0 place-items-center border-2"
+      {/* Con un solo tipo de entrada no hay nada que elegir: la lista de lotes aparece
+          recién si la fecha tiene más de uno (ej. preventa y general). */}
+      {tiers.length > 1 && (
+        <fieldset className="mt-6">
+          <legend className="sr-only">Lote</legend>
+          <div aria-hidden className="flex justify-between opacity-60">
+            <span>Lote</span>
+            <span>Precio</span>
+          </div>
+          <div className="mt-2 flex flex-col">
+            {tiers.map((t) => {
+              const soldOut = t.available === 0;
+              const selected = t.id === tier?.id;
+              return (
+                <label
+                  key={t.id}
+                  className={cn(
+                    "has-focus-visible:outline-ink relative -mx-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-sm px-2 has-focus-visible:outline-2",
+                    soldOut && "cursor-not-allowed opacity-40",
+                  )}
                 >
-                  <span className={cn("bg-ink size-2.5", !selected && "invisible")} />
-                </span>
-                <span className={cn("font-bold", soldOut && "line-through")}>{t.name}</span>
-                <span
-                  aria-hidden
-                  className="border-ink/30 flex-1 translate-y-1 border-b-2 border-dotted"
-                />
-                <span className="font-bold tabular-nums">
-                  {soldOut ? "Agotado" : PRICE_FORMAT.format(t.price)}
-                </span>
-                {/* Lo elegido, marcado con resaltador. */}
-                {selected && (
+                  <input
+                    type="radio"
+                    name="tier"
+                    value={t.id}
+                    checked={selected}
+                    disabled={soldOut}
+                    onChange={() => setTierId(t.id)}
+                    className="sr-only"
+                  />
+                  {/* La casilla impresa: se rellena con tinta al marcarla. */}
                   <span
                     aria-hidden
-                    className="bg-primary pointer-events-none absolute inset-x-0 inset-y-1.5 -rotate-[0.6deg] rounded-sm opacity-75 mix-blend-multiply"
+                    className="border-ink grid size-5 shrink-0 place-items-center border-2"
+                  >
+                    <span className={cn("bg-ink size-2.5", !selected && "invisible")} />
+                  </span>
+                  <span className={cn("font-bold", soldOut && "line-through")}>{t.name}</span>
+                  <span
+                    aria-hidden
+                    className="border-ink/30 flex-1 translate-y-1 border-b-2 border-dotted"
                   />
-                )}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+                  <span className="font-bold tabular-nums">
+                    {soldOut ? "Agotado" : PRICE_FORMAT.format(t.price)}
+                  </span>
+                  {/* Lo elegido, marcado con resaltador. */}
+                  {selected && (
+                    <span
+                      aria-hidden
+                      className="bg-primary pointer-events-none absolute inset-x-0 inset-y-1.5 -rotate-[0.6deg] rounded-sm opacity-75 mix-blend-multiply"
+                    />
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
-      <Quantity value={validQuantity} max={maxQuantity} onChange={setQuantity} />
+      {/* Sin lista de lotes, la cantidad va justo abajo de "Tu entrada": baja para que la
+          flecha de "¡completá acá!" no le caiga encima a los botones. */}
+      <Quantity
+        value={validQuantity}
+        max={maxQuantity}
+        onChange={setQuantity}
+        className={tiers.length > 1 ? "mt-4" : "mt-14 sm:mt-16"}
+      />
 
       <ReceiptRule />
 
@@ -255,16 +266,18 @@ function Quantity({
   value,
   max,
   onChange,
+  className,
 }: {
   value: number;
   max: number;
   onChange: (value: number) => void;
+  className?: string;
 }) {
   const buttonClass =
     "border-ink hover:bg-ink hover:text-paper focus-visible:ring-ink/30 flex size-11 items-center justify-center rounded-full border-2 outline-none focus-visible:ring-4 active:scale-95 disabled:pointer-events-none disabled:opacity-30";
 
   return (
-    <div className="mt-4 flex items-center justify-between gap-4">
+    <div className={cn("flex items-center justify-between gap-4", className)}>
       <p id="quantity-label">
         <span className="font-bold">Cantidad</span>{" "}
         <span className="whitespace-nowrap opacity-60">· hasta {max}</span>
