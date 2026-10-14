@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { startCheckout } from "@/components/checkout/actions";
 import { TicketCheckout } from "@/components/checkout/ticket-checkout";
 import { MarkerFilter, Star } from "@/components/doodles";
-import { MoeviusLogo } from "@/components/logo";
+import { LiquidLogo, MoeviusLogo } from "@/components/logo";
 import { PageLoader } from "@/components/page-loader";
 import { PullHint } from "@/components/pull-hint";
 import { Barcode } from "@/components/paper-slip";
@@ -176,18 +176,14 @@ function TicketHeading({ event }: { event: EventListing }) {
 }
 
 /**
- * El logo grande de la noche, con aberración cromática: dos copias en rojo y lima corridas
- * apenas, en `screen` sobre el fondo, que se mueven lento (`logo-ghost-*` en globals.css,
- * solo `transform`). Atrás, una luz roja. Con animaciones reducidas, las copias quedan
- * quietas.
+ * El logo grande de la noche, líquido y psicodélico (LiquidLogo), con una luz naranja atrás.
+ * Con animaciones reducidas, las manchas de color quedan quietas.
  */
 function LogoFx({ className }: { className?: string }) {
   return (
     <span aria-hidden className={cn("relative isolate block", className)}>
-      <span className="glow text-accent pointer-events-none absolute inset-[-25%_-10%] -z-10 rounded-full opacity-35" />
-      <MoeviusLogo className="logo-ghost-a text-accent absolute inset-0 mix-blend-screen" />
-      <MoeviusLogo className="logo-ghost-b text-primary absolute inset-0 opacity-70 mix-blend-screen" />
-      <MoeviusLogo className="text-foreground relative" />
+      <span className="glow pointer-events-none absolute inset-[-25%_-10%] -z-10 rounded-full text-[#ff5a1f] opacity-30" />
+      <LiquidLogo />
     </span>
   );
 }

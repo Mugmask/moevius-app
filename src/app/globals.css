@@ -297,37 +297,43 @@
   }
 }
 
-/*
- * Aberración cromática del logo grande (ver LogoFx): las copias de color corridas apenas
- * y, con movimiento, yendo y viniendo lento. Solo `transform`: no repinta.
- */
-.logo-ghost-a {
-  transform: translate(-0.7%, 1.2%);
-}
-
-.logo-ghost-b {
-  transform: translate(0.7%, -1.2%);
+/* Las manchas de color del logo líquido (ver LiquidLogo): solo `transform`. */
+.liquid-blob-a,
+.liquid-blob-b,
+.liquid-blob-c {
+  transform-box: view-box;
+  transform-origin: center;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .logo-ghost-a {
-    animation: logo-ghost-a 7s ease-in-out infinite;
+  .liquid-blob-a {
+    animation: liquid-blob-a 11s ease-in-out infinite alternate;
   }
 
-  .logo-ghost-b {
-    animation: logo-ghost-b 9s ease-in-out infinite;
+  .liquid-blob-b {
+    animation: liquid-blob-b 14s ease-in-out infinite alternate;
   }
-}
 
-@keyframes logo-ghost-a {
-  50% {
-    transform: translate(-1.4%, -0.6%);
+  .liquid-blob-c {
+    animation: liquid-blob-c 9s ease-in-out infinite alternate;
   }
 }
 
-@keyframes logo-ghost-b {
-  50% {
-    transform: translate(1.2%, 0.8%);
+@keyframes liquid-blob-a {
+  to {
+    transform: translate(12%, 8%) rotate(4deg);
+  }
+}
+
+@keyframes liquid-blob-b {
+  to {
+    transform: translate(-14%, -6%) scale(1.15);
+  }
+}
+
+@keyframes liquid-blob-c {
+  to {
+    transform: translate(9%, -10%) rotate(-5deg);
   }
 }
 
