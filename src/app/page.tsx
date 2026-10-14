@@ -1,10 +1,11 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 import { startCheckout } from "@/components/checkout/actions";
 import { TicketCheckout } from "@/components/checkout/ticket-checkout";
 import { MarkerFilter, Star } from "@/components/doodles";
 import { PageLoader } from "@/components/page-loader";
+import { Barcode } from "@/components/paper-slip";
 import { ReceiptRow, ReceiptRule } from "@/components/receipt";
 import { SiteFooter } from "@/components/site-chrome";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -124,28 +125,40 @@ function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
   );
 }
 
-/** Encabezado de la página, centrado sobre la máquina: qué fiesta es y cómo se compra. */
+/**
+ * Encabezado de la página, centrado sobre la máquina, como la cabeza de un flyer: la
+ * edición, la fecha enorme, el lugar y el horario, y la seña de que se tira del ticket.
+ */
 function TicketHeading({ event }: { event: EventListing }) {
   const soldOut = event.availability === "sold-out";
+  // "VIE 13" + "NOVIEMBRE" → "VIE 13 NOV".
+  const date = `${event.day} ${event.month.slice(0, 3)}`;
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="label-mono text-foreground flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-        <span>{event.title}</span>
-        <span aria-hidden>·</span>
-        <span>
-          {event.day} {event.month}
+      <p className="label-mono text-foreground">{event.title}</p>
+      <h1 className="font-display font-stretch-condensed mt-3 text-[clamp(3.75rem,19vw,8.5rem)] leading-[0.82] font-extrabold tracking-[-0.02em] uppercase">
+        <span className="sr-only">
+          Entradas {event.title}, {event.day} de {event.month}
         </span>
-        <span aria-hidden>·</span>
-        <span>{event.venue}</span>
-      </p>
-      <h1 className="font-display font-stretch-expanded mt-4 text-[clamp(2.5rem,11vw,5.5rem)] leading-[0.86] font-extrabold tracking-[-0.03em] uppercase">
-        Sacá tu <span className="highlight">ticket</span>
+        <span aria-hidden>{date}</span>
       </h1>
-      <p className="text-muted-foreground mx-auto mt-5 max-w-md text-lg text-pretty">
-        {soldOut
-          ? "Esta edición se agotó. Igual te dejamos el ticket con toda la info."
-          : "Bajá y tirá del ticket: tiene toda la info y, en el talón, lo completás y vas a pagar."}
+      <p className="label-mono text-muted-foreground mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        <span>{event.venue}</span>
+        <span aria-hidden>·</span>
+        <span>{event.neighborhood}</span>
+        <span aria-hidden>·</span>
+        <span className="tabular-nums">{event.time.replace(" — ", " → ")}</span>
       </p>
+      {soldOut ? (
+        <p className="text-muted-foreground mx-auto mt-6 max-w-md text-lg text-pretty">
+          Esta edición se agotó. Igual te dejamos el ticket con toda la info.
+        </p>
+      ) : (
+        <p className="label-mono text-foreground mt-8 inline-flex items-center gap-2">
+          Tirá del ticket para comprar
+          <ArrowDown aria-hidden className="text-primary size-4 animate-bounce" />
+        </p>
+      )}
       {soldOut && (
         <div className="mx-auto mt-6 max-w-md">
           <p className="text-muted-foreground">Dejanos tu mail y te avisamos de la próxima.</p>
@@ -218,8 +231,10 @@ function Ticket({
   const soldOut = event.availability === "sold-out";
   // "Moevius Vol. 13" → "Vol. 13": el nombre va gigante arriba.
   const edition = event.title.replace(/^moevius\s*/i, "");
-  // "VIE 13" → el número va enorme y el día de la semana, chico al lado.
+  // "VIE 13" → el número va enorme y el día de la semana, en una esquina.
   const [weekday, dayNumber] = event.day.split(" ");
+  // "20:59 — 03:00" → abre y cierra en las esquinas de abajo.
+  const [opensAt, closesAt] = event.time.split(" — ");
 
   return (
     <article data-ticket className="text-ink relative isolate mx-3 sm:mx-10">
@@ -230,72 +245,81 @@ function Ticket({
           (el ticket mide miles de px a densidad 3x) y trababa el scroll en el celu. */}
       <div aria-hidden className="absolute inset-0 -z-10 shadow-[0_24px_30px_oklch(0_0_0/0.55)]" />
 
-      {/* Arriba del título queda papel en blanco: es lo último que sale, y así "MOEVIUS" no
-          termina pegado a la ranura (y queda un tramo más para scrollear). */}
-      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-24 pb-9 lg:pt-28")}>
-        {/* La estrella va adentro del papel (lo que se pasa del borde se vería salir por
-            fuera de la ranura), debajo del título (`relative` en el header) y pegada a su
-            esquina: el `top` sigue al padding de arriba. */}
-        <Star
-          seed={3}
-          className="text-accent absolute top-16 right-1 size-16 rotate-12 sm:top-[4.25rem] sm:right-2 sm:size-24 lg:top-[4.5rem]"
-        />
+      {/* Arriba del título queda papel en blanco: es lo último que sale, y así la cabecera no
+          termina pegada a la ranura (y queda un tramo más para scrollear). */}
+      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-20 pb-9 lg:pt-24")}>
         <header className="relative">
-          <h2 className="font-display font-stretch-expanded text-center text-[clamp(2.75rem,12vw,4.75rem)] leading-[0.85] font-extrabold tracking-[-0.02em]">
+          {/* Fila de entrada: edición y año a los costados, la estrella en el medio. Va
+              adentro del papel: lo que se pasa del borde se vería salir por fuera de la
+              ranura. */}
+          <div
+            aria-hidden
+            className="flex items-center gap-3 font-bold tracking-[0.2em] whitespace-nowrap"
+          >
+            <span>{edition || "Moevius"}</span>
+            <span className="border-ink h-0 flex-1 border-t-2" />
+            <Star seed={3} className="text-accent size-9 shrink-0 rotate-12 sm:size-11" />
+            <span className="border-ink h-0 flex-1 border-t-2" />
+            <span>{event.year}</span>
+          </div>
+          <h2 className="font-display font-stretch-expanded mt-3 text-center text-[clamp(2.75rem,12.5vw,4.75rem)] leading-[0.85] font-extrabold tracking-[-0.03em]">
             <span aria-hidden>Moevius</span>
             <span className="sr-only">{event.title}</span>
           </h2>
-          {edition && (
-            <p
-              aria-hidden
-              className="border-ink font-display font-stretch-condensed mt-5 border-t-2 pt-2 text-center text-3xl leading-none font-extrabold tracking-tight sm:text-4xl"
-            >
-              {edition}
-            </p>
-          )}
         </header>
 
-        {/* La fecha es la protagonista: el número enorme y al lado mes, día y horario. */}
-        <section className="border-ink mt-8 border-y-2 py-5" aria-label="Fecha y horario">
+        {/* La fecha como un afiche chico: el día enorme con la tinta corrida y ondas de
+            sonido atrás; en las esquinas, día, mes y horario. */}
+        <section className="border-ink relative mt-6 border-y-2 py-3" aria-label="Fecha y horario">
           <p className="sr-only">
             {event.day} de {event.month} de {event.year}, de {event.time}
           </p>
-          <div aria-hidden className="grid grid-cols-[auto_1fr] items-center gap-x-4 sm:gap-x-6">
-            <span className="font-display font-stretch-condensed text-[clamp(6rem,32vw,9.5rem)] leading-[0.75] font-extrabold tracking-[-0.04em] tabular-nums">
+          <div aria-hidden className="relative isolate grid h-[min(78vw,26rem)] place-items-center">
+            <div className="sound-rings absolute top-1/2 left-1/2 -z-10 aspect-square w-[118%] -translate-1/2" />
+            <span className="ink-bleed font-display font-stretch-condensed text-[clamp(10rem,62vw,20rem)] leading-none font-extrabold tracking-[-0.05em] tabular-nums">
               {dayNumber}
             </span>
-            <div className="min-w-0">
-              <p className="font-display font-stretch-extra-condensed text-[clamp(1.5rem,7.5vw,2.75rem)] leading-[0.9] font-extrabold whitespace-nowrap">
-                {event.month}
-              </p>
-              <p className="mt-1 tracking-[0.15em]">
-                {weekday} · {event.year}
-              </p>
-              <p className="font-display font-stretch-condensed mt-3 text-2xl leading-none font-bold tabular-nums sm:text-3xl">
-                {event.time.replace("—", "→")}
-              </p>
-            </div>
+            {[
+              ["top-0 left-0", weekday],
+              ["top-0 right-0 text-right", event.month],
+              ["bottom-0 left-0", `Abre ${opensAt}`],
+              ["bottom-0 right-0 text-right", `Cierra ${closesAt}`],
+            ].map(([position, text]) => (
+              <span
+                key={position}
+                className={cn("absolute font-bold tracking-[0.2em] whitespace-nowrap", position)}
+              >
+                {text}
+              </span>
+            ))}
           </div>
         </section>
 
+        {/* Una fila del mismo estilo que el lineup, toda clickeable: el lugar grande, la
+            dirección abajo y la flecha a Maps. */}
         <section className="mt-8" aria-labelledby="ticket-venue">
-          <p className="tracking-[0.15em] opacity-60">Dónde</p>
-          <h3
-            id="ticket-venue"
-            className="font-display font-stretch-expanded mt-1 text-[clamp(1.75rem,9vw,2.75rem)] leading-[0.9] font-extrabold tracking-tight"
-          >
-            {event.venue}
-          </h3>
-          <p className="mt-2">{event.neighborhood}</p>
+          <p id="ticket-venue" className="tracking-[0.15em] opacity-60">
+            Dónde
+          </p>
           <a
             href={event.mapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-2 underline-offset-4"
+            className="group border-ink focus-visible:outline-ink mt-2 flex items-center justify-between gap-4 border-y-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-4"
           >
-            {event.address ? `${event.address} · ` : ""}Cómo llegar
-            <ArrowUpRight className="size-4" />
-            <span className="sr-only">(abre Google Maps)</span>
+            <span className="min-w-0">
+              <span className="font-display font-stretch-condensed block text-[clamp(2rem,10vw,3rem)] leading-[0.9] font-extrabold">
+                {event.venue}
+              </span>
+              <span className="mt-2 block opacity-60">
+                {event.address && <span className="block">{event.address}</span>}
+                <span className="block">{event.neighborhood}</span>
+              </span>
+            </span>
+            <span className="border-ink group-hover:bg-ink group-hover:text-paper grid size-11 shrink-0 place-items-center rounded-full border-2 transition-colors">
+              <ArrowUpRight className="size-5" />
+            </span>
+            <span className="sr-only">Cómo llegar (abre Google Maps)</span>
           </a>
         </section>
 
@@ -346,34 +370,6 @@ function Ticket({
 
       <div aria-hidden className="torn-edge absolute inset-x-0 top-full h-3.5" />
     </article>
-  );
-}
-
-/**
- * Código de barras decorativo: anchos de barra que salen del slug con un LCG, así es
- * siempre el mismo para la misma fecha (y no rompe la hidratación).
- */
-function Barcode({ seed, className }: { seed: string; className?: string }) {
-  let state = [...seed].reduce((acc, char) => (acc * 31 + char.charCodeAt(0)) >>> 0, 7);
-  const bars: { x: number; width: number }[] = [];
-  let x = 0;
-  while (x < 240) {
-    state = (state * 1103515245 + 12345) & 0x7fffffff;
-    const width = 1 + (state % 3);
-    if (state % 3 !== 0) bars.push({ x, width });
-    x += width + 1 + ((state >> 4) % 2);
-  }
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 240 40"
-      preserveAspectRatio="none"
-      className={cn("fill-current", className)}
-    >
-      {bars.map((bar) => (
-        <rect key={bar.x} x={bar.x} y={0} width={bar.width} height={40} />
-      ))}
-    </svg>
   );
 }
 

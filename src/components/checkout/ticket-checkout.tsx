@@ -1,10 +1,12 @@
 "use client";
 
 import { ArrowUpRight, Minus, Plus } from "lucide-react";
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { useSecondsLeft } from "@/components/countdown";
-import { Arrow, Note } from "@/components/doodles";
+import { MpPayButton } from "@/components/mp-pay-button";
+import { INK_BUTTON, PaperField } from "@/components/paper-slip";
 import { ReceiptRule } from "@/components/receipt";
 import { Turnstile } from "@/components/turnstile";
 import { RESERVATION_MINUTES } from "@/lib/config";
@@ -19,14 +21,12 @@ type Action = (prev: CheckoutState, formData: FormData) => Promise<CheckoutState
 /** Ancla de la compra: `/#tickets` (links viejos, "Volver a comprar") baja hasta acá. */
 export const CHECKOUT_ANCHOR = "tickets";
 
-const INK_BUTTON =
-  "bg-ink text-paper hover:bg-ink/85 focus-visible:ring-ink/30 flex h-14 w-full items-center justify-between gap-3 rounded-full px-6 font-mono text-sm font-bold tracking-wider uppercase outline-none focus-visible:ring-4 active:scale-[0.98] disabled:opacity-50 sm:h-16 sm:px-8 sm:text-base";
-
 /**
- * La compra escrita en el talón del ticket, como un recibo: lote (si hay más de uno),
- * cantidad, total y los datos del titular. Al reservar, el talón queda sellado con la cuenta regresiva y el
- * botón para pagar en Mercado Pago. Si la reserva vence, "Empezar de nuevo" remonta el
- * form. Va dentro del talón del ticket, que pone el mono y las mayúsculas.
+ * La compra escrita en el talón del ticket, como un recibo: los datos del titular, el lote
+ * (si hay más de uno) y la cantidad, y al final el total y el botón. Al reservar, el talón
+ * queda sellado con la cuenta regresiva y el botón para pagar en Mercado Pago. Si la reserva
+ * vence, "Empezar de nuevo" remonta el form. Va dentro del talón del ticket, que pone el
+ * mono y las mayúsculas.
  */
 export function TicketCheckout({ tiers, action }: { tiers: TicketTier[]; action: Action }) {
   const [attempt, setAttempt] = useState(0);
@@ -71,99 +71,17 @@ function CheckoutStub({
       <input type="hidden" name="ticketTypeId" value={tier?.id ?? ""} />
       <input type="hidden" name="quantity" value={validQuantity} />
 
-      <div className="relative">
-        <h3 className="font-bold tracking-[0.2em]">Tu entrada</h3>
-        <Note className="absolute -top-4 right-0 rotate-[-5deg] text-xl sm:-top-6 sm:text-3xl">
-          ¡completá acá!
-        </Note>
-        <Arrow className="text-accent absolute top-4 right-28 size-9 rotate-[20deg] sm:top-6 sm:right-44 sm:size-11" />
-      </div>
+      <h3 className="font-display font-stretch-condensed text-3xl leading-none font-extrabold sm:text-4xl">
+        Comprá tu entrada
+      </h3>
+      <p className="mt-2 font-sans text-sm leading-snug normal-case opacity-70 sm:text-base">
+        Completá tus datos, elegí cuántas y reservá. Pagás en Mercado Pago y la entrada te llega por
+        mail.
+      </p>
 
-      {/* Con un solo tipo de entrada no hay nada que elegir: la lista de lotes aparece
-          recién si la fecha tiene más de uno (ej. preventa y general). */}
-      {tiers.length > 1 && (
-        <fieldset className="mt-6">
-          <legend className="sr-only">Lote</legend>
-          <div aria-hidden className="flex justify-between opacity-60">
-            <span>Lote</span>
-            <span>Precio</span>
-          </div>
-          <div className="mt-2 flex flex-col">
-            {tiers.map((t) => {
-              const soldOut = t.available === 0;
-              const selected = t.id === tier?.id;
-              return (
-                <label
-                  key={t.id}
-                  className={cn(
-                    "has-focus-visible:outline-ink relative -mx-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-sm px-2 has-focus-visible:outline-2",
-                    soldOut && "cursor-not-allowed opacity-40",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="tier"
-                    value={t.id}
-                    checked={selected}
-                    disabled={soldOut}
-                    onChange={() => setTierId(t.id)}
-                    className="sr-only"
-                  />
-                  {/* La casilla impresa: se rellena con tinta al marcarla. */}
-                  <span
-                    aria-hidden
-                    className="border-ink grid size-5 shrink-0 place-items-center border-2"
-                  >
-                    <span className={cn("bg-ink size-2.5", !selected && "invisible")} />
-                  </span>
-                  <span className={cn("font-bold", soldOut && "line-through")}>{t.name}</span>
-                  <span
-                    aria-hidden
-                    className="border-ink/30 flex-1 translate-y-1 border-b-2 border-dotted"
-                  />
-                  <span className="font-bold tabular-nums">
-                    {soldOut ? "Agotado" : PRICE_FORMAT.format(t.price)}
-                  </span>
-                  {/* Lo elegido, marcado con resaltador. */}
-                  {selected && (
-                    <span
-                      aria-hidden
-                      className="bg-primary pointer-events-none absolute inset-x-0 inset-y-1.5 -rotate-[0.6deg] rounded-sm opacity-75 mix-blend-multiply"
-                    />
-                  )}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-      )}
-
-      {/* Sin lista de lotes, la cantidad va justo abajo de "Tu entrada": baja para que la
-          flecha de "¡completá acá!" no le caiga encima a los botones. */}
-      <Quantity
-        value={validQuantity}
-        max={maxQuantity}
-        onChange={setQuantity}
-        className={tiers.length > 1 ? "mt-4" : "mt-14 sm:mt-16"}
-      />
-
-      <ReceiptRule />
-
-      <div className="flex items-end justify-between gap-4">
-        <span className="font-bold tracking-[0.2em]">Total</span>
-        <output
-          aria-live="polite"
-          className="font-display font-stretch-expanded text-4xl leading-none font-extrabold tracking-tight tabular-nums sm:text-5xl"
-        >
-          {PRICE_FORMAT.format(total)}
-        </output>
-      </div>
-
-      <ReceiptRule />
-
-      <fieldset className="relative">
-        <legend className="font-bold tracking-[0.2em]">Titular</legend>
-        <div className="mt-4 flex flex-col gap-5">
+      <fieldset className="mt-8">
+        <StepLegend step={1}>Tus datos</StepLegend>
+        <div className="mt-4 flex flex-col gap-4">
           <PaperField
             id="name"
             name="name"
@@ -177,8 +95,8 @@ function CheckoutStub({
             name="email"
             type="email"
             label="Email"
-            hint="Acá te llega la entrada con el QR."
-            note="¡acá te llega el QR!"
+            hint="Te mandamos la entrada con el QR a este mail."
+            placeholder="vos@mail.com"
             autoComplete="email"
             required
             defaultValue={state.values?.email}
@@ -187,7 +105,8 @@ function CheckoutStub({
             id="dni"
             name="dni"
             label="DNI"
-            hint="Lo piden en la puerta."
+            hint="Te lo piden en la puerta junto con el QR."
+            placeholder="12.345.678"
             inputMode="numeric"
             autoComplete="off"
             // Lo mismo que acepta el server: 7 u 8 números, con o sin puntos.
@@ -199,6 +118,90 @@ function CheckoutStub({
           />
         </div>
       </fieldset>
+
+      <fieldset className="mt-8">
+        <StepLegend step={2}>Cuántas entradas</StepLegend>
+        {/* Con un solo tipo de entrada no hay nada que elegir: la lista de lotes aparece
+          recién si la fecha tiene más de uno (ej. preventa y general). */}
+        {tiers.length > 1 && (
+          <div role="radiogroup" aria-label="Lote" className="mt-4">
+            <div aria-hidden className="flex justify-between opacity-60">
+              <span>Lote</span>
+              <span>Precio</span>
+            </div>
+            <div className="mt-2 flex flex-col">
+              {tiers.map((t) => {
+                const soldOut = t.available === 0;
+                const selected = t.id === tier?.id;
+                return (
+                  <label
+                    key={t.id}
+                    className={cn(
+                      "has-focus-visible:outline-ink relative -mx-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-sm px-2 has-focus-visible:outline-2",
+                      soldOut && "cursor-not-allowed opacity-40",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="tier"
+                      value={t.id}
+                      checked={selected}
+                      disabled={soldOut}
+                      onChange={() => setTierId(t.id)}
+                      className="sr-only"
+                    />
+                    {/* La casilla impresa: se rellena con tinta al marcarla. */}
+                    <span
+                      aria-hidden
+                      className="border-ink grid size-5 shrink-0 place-items-center border-2"
+                    >
+                      <span className={cn("bg-ink size-2.5", !selected && "invisible")} />
+                    </span>
+                    <span className={cn("font-bold", soldOut && "line-through")}>{t.name}</span>
+                    <span
+                      aria-hidden
+                      className="border-ink/30 flex-1 translate-y-1 border-b-2 border-dotted"
+                    />
+                    <span className="font-bold tabular-nums">
+                      {soldOut ? "Agotado" : PRICE_FORMAT.format(t.price)}
+                    </span>
+                    {/* Lo elegido, marcado con resaltador. */}
+                    {selected && (
+                      <span
+                        aria-hidden
+                        className="bg-primary pointer-events-none absolute inset-x-0 inset-y-1.5 -rotate-[0.6deg] rounded-sm opacity-75 mix-blend-multiply"
+                      />
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <Quantity
+          value={validQuantity}
+          max={maxQuantity}
+          price={tier?.price ?? 0}
+          onChange={setQuantity}
+          className="mt-4"
+        />
+      </fieldset>
+
+      <div className="border-ink mt-8 flex items-end justify-between gap-4 border-t-2 pt-4">
+        <div>
+          <p className="font-bold tracking-[0.2em]">Total</p>
+          <p className="mt-1 font-sans text-sm normal-case opacity-70">
+            {validQuantity} {validQuantity === 1 ? "entrada" : "entradas"}
+          </p>
+        </div>
+        <output
+          aria-live="polite"
+          className="font-display font-stretch-expanded text-4xl leading-none font-extrabold tracking-tight tabular-nums sm:text-5xl"
+        >
+          {PRICE_FORMAT.format(total)}
+        </output>
+      </div>
 
       {/* Token nuevo por intento: cada respuesta del server (state) resetea el widget. */}
       <div className="mt-5 empty:hidden">
@@ -214,62 +217,51 @@ function CheckoutStub({
         </p>
       )}
 
-      <button type="submit" disabled={pending || !tier} className={cn(INK_BUTTON, "mt-7")}>
-        {pending ? "Reservando…" : `Reservar · ${PRICE_FORMAT.format(total)}`}
+      <button type="submit" disabled={pending || !tier} className={cn(INK_BUTTON, "mt-6")}>
+        {pending ? "Reservando…" : "Reservar y pagar"}
         {!pending && <ArrowUpRight aria-hidden className="text-primary size-5" />}
       </button>
       <p className="mt-3 text-center font-sans text-xs leading-snug normal-case opacity-70 sm:text-sm">
         Te guardamos {validQuantity === 1 ? "la entrada" : "las entradas"} {RESERVATION_MINUTES}{" "}
-        minutos mientras pagás en Mercado Pago.
+        minutos mientras pagás en Mercado Pago. Al reservar aceptás los{" "}
+        <Link href="/terminos" className="font-semibold underline underline-offset-2">
+          Términos y condiciones
+        </Link>{" "}
+        y la{" "}
+        <Link href="/privacidad" className="font-semibold underline underline-offset-2">
+          Política de privacidad
+        </Link>
+        .
       </p>
     </form>
   );
 }
 
-/**
- * Renglón del recibo para escribir: etiqueta a la izquierda (arriba en el celu) y la
- * línea a la derecha. `note`: lo mismo que `hint`, escrito a mano al costado.
- */
-function PaperField({
-  label,
-  id,
-  hint,
-  note,
-  ...props
-}: React.ComponentProps<"input"> & { label: string; id: string; hint?: string; note?: string }) {
+/** Título de cada paso del talón: el número en un círculo y qué se completa. */
+function StepLegend({ step, children }: { step: number; children: React.ReactNode }) {
   return (
-    <div className="relative sm:grid sm:grid-cols-[11rem_1fr] sm:items-end sm:gap-4">
-      <label htmlFor={id} className="block pb-1 opacity-60 sm:pb-2.5">
-        {label}
-      </label>
-      <input
-        id={id}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-        {...props}
-        className="border-ink/35 text-ink focus:border-ink focus-visible:bg-ink/5 h-11 w-full rounded-none border-0 border-b-2 bg-transparent px-1 font-mono text-base font-semibold normal-case outline-none sm:h-12 sm:text-lg"
-      />
-      {hint && (
-        <span id={`${id}-hint`} className="sr-only">
-          {hint}
-        </span>
-      )}
-      {note && (
-        <Note className="absolute -top-3 right-0 rotate-[-3deg] text-sm sm:-top-4 sm:text-lg">
-          {note}
-        </Note>
-      )}
-    </div>
+    <legend className="flex items-center gap-3 font-bold tracking-[0.15em]">
+      <span
+        aria-hidden
+        className="bg-ink text-paper grid size-7 shrink-0 place-items-center rounded-full text-sm"
+      >
+        {step}
+      </span>
+      {children}
+    </legend>
   );
 }
 
 function Quantity({
   value,
   max,
+  price,
   onChange,
   className,
 }: {
   value: number;
   max: number;
+  price: number;
   onChange: (value: number) => void;
   className?: string;
 }) {
@@ -278,9 +270,9 @@ function Quantity({
 
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>
-      <p id="quantity-label">
-        <span className="font-bold">Cantidad</span>{" "}
-        <span className="whitespace-nowrap opacity-60">· hasta {max}</span>
+      <p id="quantity-label" className="font-sans normal-case">
+        <span className="block font-semibold tabular-nums">{PRICE_FORMAT.format(price)} c/u</span>
+        <span className="block text-xs opacity-70 sm:text-sm">Hasta {max} por compra</span>
       </p>
       <div role="group" aria-labelledby="quantity-label" className="flex items-center gap-3">
         <button
@@ -377,11 +369,7 @@ function ReservedStub({
               Te la guardamos hasta las {TIME_FORMAT.format(new Date(reservation.expiresAt))}
             </p>
           </div>
-          {/* MP abre su app en el celu si está instalada, con la cuenta ya logueada. */}
-          <a href={reservation.checkoutUrl} className={cn(INK_BUTTON, "mt-7")}>
-            Ir a pagar
-            <ArrowUpRight aria-hidden className="text-primary size-5" />
-          </a>
+          <MpPayButton checkoutUrl={reservation.checkoutUrl} className="mt-7" />
           <p className="mt-3 text-center font-sans text-xs leading-snug normal-case opacity-70 sm:text-sm">
             En Mercado Pago, con tarjeta, dinero en cuenta o transferencia. Apenas se acredita, te{" "}
             {reservation.quantity === 1 ? "llega" : "llegan"} {tickets} por mail.

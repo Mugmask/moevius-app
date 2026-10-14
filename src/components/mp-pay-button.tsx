@@ -1,16 +1,24 @@
 import { ArrowUpRight } from "lucide-react";
 
-import { Pill } from "@/components/brand";
+import { INK_BUTTON } from "@/components/paper-slip";
+import { cn } from "@/lib/utils";
 
 /**
- * Lleva al checkout de Mercado Pago (API de Orders: no hay Brick, es un redirect).
- * En el celu MP abre su app si está instalada, con la cuenta ya logueada.
+ * Lleva al checkout de Mercado Pago (API de Orders: no hay Brick, es un redirect). Es la
+ * única forma de pagar, así que el botón lo nombra. En el celu MP abre su app si está
+ * instalada, con la cuenta ya logueada.
  */
-export function MpPayButton({ checkoutUrl }: { checkoutUrl: string }) {
+export function MpPayButton({
+  checkoutUrl,
+  className,
+}: {
+  checkoutUrl: string;
+  className?: string;
+}) {
   return (
-    <Pill className="w-full justify-center" nativeButton={false} render={<a href={checkoutUrl} />}>
+    <a href={checkoutUrl} className={cn(INK_BUTTON, className)}>
       Pagar con Mercado Pago
-      <ArrowUpRight data-icon="inline-end" className="size-5" />
-    </Pill>
+      <ArrowUpRight aria-hidden className="text-primary size-5" />
+    </a>
   );
 }

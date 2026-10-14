@@ -115,7 +115,7 @@
   html {
     @apply font-sans;
     /* `clip` y no `hidden`: recorta lo que se pasa de ancho sin crear un contenedor
-       de scroll, así el header sticky sigue funcionando. */
+       de scroll, así la máquina sticky de la home sigue funcionando. */
     overflow-x: clip;
   }
 }
@@ -178,6 +178,40 @@
 @utility paper-crumple {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.009' numOctaves='5' seed='4'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='5'%3E%3CfeDistantLight azimuth='50' elevation='45'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.4' intercept='0.64'/%3E%3CfeFuncG type='linear' slope='0.4' intercept='0.64'/%3E%3CfeFuncB type='linear' slope='0.4' intercept='0.64'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
   background-blend-mode: multiply;
+}
+
+/*
+ * Ondas de sonido detrás de la fecha del ticket: anillos difusos (degradado repetido, sin
+ * `filter: blur`, que se re-rasteriza con el tirón) recortados en dos arcos, `(( ))`.
+ */
+@utility sound-rings {
+  background: repeating-radial-gradient(
+    circle,
+    transparent 0 9%,
+    color-mix(in oklch, var(--accent) 85%, transparent) 15% 17%,
+    transparent 24%
+  );
+  mask:
+    radial-gradient(closest-side, #000 60%, #0000),
+    conic-gradient(
+      #0000 0 20deg,
+      #000 50deg 130deg,
+      #0000 160deg 200deg,
+      #000 230deg 310deg,
+      #0000 340deg
+    );
+  mask-composite: intersect;
+}
+
+/*
+ * Tinta corrida: el texto se ve impreso de más, con el borde que se esparce en el papel.
+ * Es `text-shadow` (se pinta una vez), no un filtro.
+ */
+@utility ink-bleed {
+  text-shadow:
+    0 0 1px currentColor,
+    0 0 6px color-mix(in oklch, currentColor 45%, transparent),
+    0 0 18px color-mix(in oklch, currentColor 20%, transparent);
 }
 
 /*
@@ -385,58 +419,6 @@
     oklch(0 0 0 / 0.3) 92%,
     transparent
   );
-}
-
-/*
- * Muescas del header-ticket (ver SiteHeader): medio círculo recortado arriba y abajo
- * en el borde derecho del cuerpo (`-right`) y en el izquierdo del talón (`-left`).
- * Juntas forman el troquel.
- */
-@utility notch-right {
-  mask:
-    radial-gradient(circle 0.55rem at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle 0.55rem at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
-}
-
-@utility notch-left {
-  mask:
-    radial-gradient(circle 0.55rem at 0 0, #0000 98%, #000) top / 100% 51% no-repeat,
-    radial-gradient(circle 0.55rem at 0 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
-}
-
-/*
- * Efectos atados al scroll de la página, sin JS. Donde el navegador no tiene
- * scroll-driven animations, la barra no se ve y el isotipo queda quieto.
- */
-@utility scroll-progress {
-  transform: scaleX(0);
-  transform-origin: left;
-}
-
-@keyframes fill-x {
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes spin-full {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  .scroll-progress {
-    animation: fill-x linear both;
-    animation-timeline: scroll(root);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .scroll-spin {
-      animation: spin-full linear both;
-      animation-timeline: scroll(root);
-    }
-  }
 }
 
 @keyframes drift {
