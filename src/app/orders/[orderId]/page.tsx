@@ -98,7 +98,7 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
         {order.status === "paid" ? (
           <>
-            <h1 className="font-display text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
+            <h1 className="font-display font-stretch-expanded font-extrabold text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
               Ya <span className="highlight">estás</span> adentro
             </h1>
             <p className="mt-6 max-w-xl text-lg font-medium">
@@ -136,12 +136,8 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
               la plata completa a tu medio de pago (según el medio, puede tardar unos días en
               verse).
             </p>
-            <Pill
-              className="mt-8"
-              nativeButton={false}
-              render={<Link href={`/events/${order.event.slug}`} />}
-            >
-              Ver la fecha
+            <Pill className="mt-8" nativeButton={false} render={<Link href="/#tickets" />}>
+              Ver la fiesta
             </Pill>
           </StatusMessage>
         ) : order.status === "refunded" ? (
@@ -157,11 +153,7 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
               No llegamos a recibir el pago a tiempo y liberamos las entradas. Si te cobraron,
               escribinos por Instagram con el mail de la compra.
             </p>
-            <Pill
-              className="mt-8"
-              nativeButton={false}
-              render={<Link href={`/events/${order.event.slug}`} />}
-            >
+            <Pill className="mt-8" nativeButton={false} render={<Link href="/#tickets" />}>
               Volver a comprar
             </Pill>
           </StatusMessage>
@@ -209,7 +201,7 @@ function isReservationExpired(order: Pick<OrderWithTickets, "status" | "expires_
 function StatusMessage({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="max-w-xl">
-      <h1 className="font-display text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
+      <h1 className="font-display font-stretch-expanded font-extrabold text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
         {title}
       </h1>
       <div className="mt-6 text-lg font-medium">{children}</div>

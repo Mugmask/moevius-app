@@ -28,7 +28,9 @@ export default async function DoorPage() {
     <>
       <StaffHeader email={staff.user.email} role={staff.role} />
       <main className="mx-auto w-full max-w-md flex-1 px-6 py-12">
-        <h1 className="font-display text-5xl tracking-tight uppercase">Puerta</h1>
+        <h1 className="font-display font-stretch-expanded font-extrabold text-5xl tracking-tight uppercase">
+          Puerta
+        </h1>
         <p className="text-muted-foreground mt-2 font-medium">¿Qué fecha estás controlando?</p>
 
         <ul className="mt-8 flex flex-col gap-3">
@@ -38,9 +40,9 @@ export default async function DoorPage() {
               <li key={event.id}>
                 <Link
                   href={`/door/${event.slug}`}
-                  className="border-foreground bg-card shadow-hard-sm hover:bg-primary block rounded-2xl border-2 p-5"
+                  className="border-border bg-card shadow-hard-sm hover:border-primary block rounded-2xl border p-5"
                 >
-                  <p className="font-display text-3xl tracking-tight uppercase">
+                  <p className="font-display font-stretch-expanded font-extrabold text-3xl tracking-tight uppercase">
                     {day} {month}
                   </p>
                   <p className="text-sm font-bold">

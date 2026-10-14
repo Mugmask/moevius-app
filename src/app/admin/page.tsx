@@ -46,15 +46,17 @@ export default async function AdminPage() {
     <>
       <StaffHeader email={staff.user.email} role={staff.role} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
-        <h1 className="font-display text-5xl tracking-tight uppercase">Ventas</h1>
+        <h1 className="font-display font-stretch-expanded font-extrabold text-5xl tracking-tight uppercase">
+          Ventas
+        </h1>
         <p className="text-muted-foreground mt-2 text-sm font-medium">
           Las fechas y los lotes se cargan desde el dashboard de Supabase (tablas{" "}
           <code>events</code> y <code>ticket_types</code>).
         </p>
 
-        <div className="border-foreground mt-10 overflow-x-auto rounded-2xl border-2">
+        <div className="border-border mt-10 overflow-x-auto rounded-2xl border">
           <table className="bg-card w-full min-w-[40rem] text-left text-sm">
-            <thead className="border-foreground border-b-2 text-xs uppercase">
+            <thead className="border-border border-b text-xs uppercase">
               <tr>
                 <th className="px-4 py-3">Fecha</th>
                 <th className="px-4 py-3">Estado</th>

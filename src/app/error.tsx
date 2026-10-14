@@ -22,7 +22,7 @@ export default function ErrorPage({
     <>
       <SiteHeader />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-start justify-center px-6 py-24">
-        <h1 className="font-display text-6xl leading-[0.9] tracking-tight uppercase sm:text-7xl">
+        <h1 className="font-display font-stretch-expanded font-extrabold text-6xl leading-[0.9] tracking-tight uppercase sm:text-7xl">
           Algo se <span className="highlight">cortó</span>
         </h1>
         <p className="mt-6 max-w-md text-lg font-medium">
@@ -34,7 +34,7 @@ export default function ErrorPage({
         )}
         <div className="mt-10 flex flex-wrap gap-3">
           <Pill onClick={() => retry()}>Probar de nuevo</Pill>
-          <Pill tone="paper" nativeButton={false} render={<Link href="/" />}>
+          <Pill tone="outline" nativeButton={false} render={<Link href="/" />}>
             Ir al inicio
           </Pill>
         </div>

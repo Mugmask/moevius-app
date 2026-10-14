@@ -30,11 +30,11 @@ export default async function DoorEventPage({ params }: PageProps<"/door/[slug]"
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-foreground bg-card flex items-center justify-between border-b-2 px-4 py-3">
+      <header className="border-border bg-card flex items-center justify-between border-b px-4 py-3">
         <Link href="/door" className="text-sm font-bold">
           ← Fechas
         </Link>
-        <p className="font-display tracking-tight uppercase">
+        <p className="font-display font-stretch-expanded font-extrabold tracking-tight uppercase">
           {day} {month}
         </p>
       </header>

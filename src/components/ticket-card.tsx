@@ -16,7 +16,7 @@ type TicketCardProps = {
   className?: string;
 };
 
-/** La entrada como objeto físico. La usa el hero de la landing y la entrada real. */
+/** La entrada como objeto físico. La usan la página de la compra y la entrada suelta. */
 export function TicketCard({
   label,
   badge,
@@ -34,25 +34,25 @@ export function TicketCard({
   return (
     <article
       className={cn(
-        "border-foreground bg-card shadow-hard w-full max-w-xs shrink-0 rounded-2xl border-2",
+        "border-border bg-card shadow-hard relative w-full max-w-xs shrink-0 overflow-hidden rounded-3xl border",
         className,
       )}
     >
-      <header className="border-foreground flex items-center justify-between gap-3 border-b-2 px-5 py-3">
-        <span className="text-xs font-bold tracking-wide uppercase">{label}</span>
+      <header className="border-border flex items-center justify-between gap-3 border-b px-5 py-3">
+        <span className="label-mono text-muted-foreground">{label}</span>
         {badge}
       </header>
 
       <div className="px-5 py-6">
-        <p className="text-muted-foreground text-xs font-bold">
+        <p className="label-mono text-muted-foreground">
           {day} {month} · {time}
         </p>
-        <h2 className="font-display mt-1 text-3xl leading-none tracking-tight uppercase">
+        <h2 className="font-display font-stretch-expanded mt-2 text-3xl leading-[0.9] font-extrabold tracking-tight uppercase">
           Moevius
           <br />
-          {month}
+          <span className="highlight">{month}</span>
         </h2>
-        <p className="mt-2 text-sm font-bold">
+        <p className="mt-3 text-sm font-medium">
           {venue} · {neighborhood}
         </p>
 
@@ -60,8 +60,8 @@ export function TicketCard({
             cortaba, y en la puerta se compara con el DNI. */}
         <div className="mt-6 flex flex-col items-start gap-4 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs font-bold">{detailLabel}</p>
-            <p className="font-display text-2xl leading-tight tracking-tight break-words">
+            <p className="label-mono text-muted-foreground">{detailLabel}</p>
+            <p className="font-display mt-1 text-2xl leading-tight font-bold tracking-tight break-words">
               {detail}
             </p>
           </div>
@@ -71,53 +71,15 @@ export function TicketCard({
 
       {/* Perforación de entrada: muescas laterales y línea de corte. */}
       <div className="relative">
-        <span className="bg-background border-foreground absolute -top-3 -left-3 size-5 rounded-full border-2" />
-        <span className="bg-background border-foreground absolute -top-3 -right-3 size-5 rounded-full border-2" />
-        <div className="border-foreground border-t-2 border-dashed" />
+        <span className="bg-background border-border absolute -top-3 -left-3 size-6 rounded-full border" />
+        <span className="bg-background border-border absolute -top-3 -right-3 size-6 rounded-full border" />
+        <div className="border-border mx-4 border-t border-dashed" />
       </div>
 
-      <footer className="flex items-center justify-between gap-3 px-5 py-3 text-[0.65rem] font-bold">
-        <span className="truncate uppercase">{code}</span>
-        <span className="text-muted-foreground shrink-0">moevius.app</span>
+      <footer className="label-mono text-muted-foreground flex items-center justify-between gap-3 px-5 py-3">
+        <span className="truncate">{code}</span>
+        <span className="shrink-0">moevius.app</span>
       </footer>
     </article>
-  );
-}
-
-const QR_SIZE = 13;
-
-/**
- * Patrón de QR decorativo, calculado una sola vez al cargar el módulo con un LCG
- * de semilla fija: mismos bits en servidor y cliente, así que no rompe la hidratación.
- */
-const QR_CELLS = (() => {
-  let seed = 0x4d4f45;
-  return Array.from({ length: QR_SIZE * QR_SIZE }, (_, i) => {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    const row = Math.floor(i / QR_SIZE);
-    const col = i % QR_SIZE;
-    // Los tres ojos de posicionamiento van sólidos, como en un QR de verdad.
-    const inEye =
-      (row < 4 && col < 4) || (row < 4 && col >= QR_SIZE - 4) || (row >= QR_SIZE - 4 && col < 4);
-    if (inEye) {
-      const r = row < 4 ? row : QR_SIZE - 1 - row;
-      const c = col < 4 ? col : QR_SIZE - 1 - col;
-      return r === 1 || c === 1 ? false : r < 3 && c < 3;
-    }
-    return seed % 100 > 52;
-  });
-})();
-
-export function FakeQr() {
-  return (
-    <div
-      aria-hidden
-      className="border-foreground grid shrink-0 gap-px rounded-md border-2 p-1.5"
-      style={{ gridTemplateColumns: `repeat(${QR_SIZE}, 1fr)` }}
-    >
-      {QR_CELLS.map((on, i) => (
-        <span key={i} className={cn("size-0.75", on ? "bg-foreground" : "bg-transparent")} />
-      ))}
-    </div>
   );
 }

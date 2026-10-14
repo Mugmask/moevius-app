@@ -29,7 +29,7 @@ export function TicketView({ event, ticket, ticketType, holder, className }: Pro
       badge={
         <span
           className={cn(
-            "border-foreground inline-flex shrink-0 items-center rounded-full border-2 px-3 py-1 text-xs font-bold",
+            "label-mono inline-flex shrink-0 items-center rounded-full px-3 py-1.5",
             ticket.status === "valid"
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground",

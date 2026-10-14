@@ -9,10 +9,7 @@ export async function RealQr({ code, className }: { code: string; className?: st
     <div
       role="img"
       aria-label="Código QR de la entrada"
-      className={cn(
-        "border-foreground shrink-0 rounded-md border-2 bg-white p-2 [&_svg]:size-full",
-        className,
-      )}
+      className={cn("shrink-0 rounded-xl bg-white p-2 [&_svg]:size-full", className)}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

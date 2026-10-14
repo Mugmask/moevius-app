@@ -1,22 +1,24 @@
 import { Button } from "@/components/ui/button";
-import type { Availability } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
-/** Botón pill grande. `tone="ink"` es el negro sólido; `"paper"` el de contorno. */
+/**
+ * Botón pill grande. `tone="solid"` es la acción principal (lima: solo para lo que
+ * compra o avanza); `"outline"` el secundario, con línea fina de hueso.
+ */
 export function Pill({
-  tone = "ink",
+  tone = "solid",
   className,
   children,
   ...props
-}: React.ComponentProps<typeof Button> & { tone?: "ink" | "paper" | "brand" }) {
+}: React.ComponentProps<typeof Button> & { tone?: "solid" | "outline" }) {
   return (
     <Button
       {...props}
       className={cn(
-        "h-12 rounded-full border-2 px-6 text-sm font-bold tracking-tight",
-        tone === "ink" && "border-foreground bg-foreground text-background hover:bg-foreground/85",
-        tone === "paper" && "border-foreground bg-card text-foreground hover:bg-muted",
-        tone === "brand" && "border-foreground bg-primary text-primary-foreground hover:bg-primary",
+        "h-12 gap-2 rounded-full px-6 text-sm font-semibold tracking-tight transition-[background-color,transform] active:scale-[0.98]",
+        tone === "solid" && "bg-primary text-primary-foreground hover:bg-primary/85",
+        tone === "outline" &&
+          "border-input text-foreground hover:bg-foreground/10 border bg-transparent",
         className,
       )}
     >
@@ -25,46 +27,38 @@ export function Pill({
   );
 }
 
-/** Asterisco de sticker. Se usa suelto, como una calcomanía pegada al azar. */
-export function Star({ className }: { className?: string }) {
+/**
+ * Isotipo: un estallido de puntos, como un parlante visto de frente o una luz que
+ * se abre. Hereda el color del texto (`fill-current`).
+ */
+export function Burst({ className }: { className?: string }) {
+  const dots = Array.from({ length: 10 }, (_, i) => (i * 360) / 10);
   return (
-    <svg viewBox="0 0 100 100" aria-hidden className={cn("fill-primary", className)}>
-      <path d="M50 0 L59 34 L88 15 L69 44 L100 50 L69 56 L88 85 L59 66 L50 100 L41 66 L12 85 L31 56 L0 50 L31 44 L12 15 L41 34 Z" />
+    <svg viewBox="0 0 100 100" aria-hidden className={cn("fill-current", className)}>
+      <circle cx="50" cy="50" r="9" />
+      {dots.map((angle) => (
+        <g key={angle} transform={`rotate(${angle} 50 50)`}>
+          <circle cx="50" cy="27" r="7" />
+          <circle cx="50" cy="9" r="8.5" />
+        </g>
+      ))}
     </svg>
   );
 }
 
-export function Wordmark({ className }: { className?: string }) {
+/** `spin`: el isotipo gira mientras se scrollea la página (ver `scroll-spin`). */
+export function Wordmark({ className, spin = false }: { className?: string; spin?: boolean }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <span className="border-foreground bg-primary size-5 rounded-full border-2" />
-      <span className="font-display text-lg tracking-tight">MOEVIUS</span>
+      <Burst className={cn("size-5", spin && "scroll-spin")} />
+      <span className="font-display font-stretch-expanded text-base font-extrabold tracking-tight">
+        MOEVIUS
+      </span>
     </div>
   );
 }
 
-const AVAILABILITY_LABEL: Record<Availability, string> = {
-  "on-sale": "En venta",
-  "few-left": "Últimas entradas",
-  "sold-out": "Agotado",
-};
-
-export function AvailabilityBadge({ availability }: { availability: Availability }) {
-  return (
-    <span
-      className={cn(
-        "border-foreground inline-flex shrink-0 items-center rounded-full border-2 px-3 py-1 text-xs font-bold",
-        availability === "sold-out"
-          ? "bg-muted text-muted-foreground"
-          : "bg-primary text-primary-foreground",
-      )}
-    >
-      {AVAILABILITY_LABEL[availability]}
-    </span>
-  );
-}
-
-/** Input de formulario con el mismo trazo que los pills. */
+/** Input de formulario: fondo apenas más claro que la noche, línea fina y foco lima. */
 export function Field({
   label,
   id,
@@ -73,13 +67,13 @@ export function Field({
 }: React.ComponentProps<"input"> & { label: string; id: string }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className="text-xs font-bold tracking-wide uppercase">
+      <label htmlFor={id} className="label-mono text-muted-foreground">
         {label}
       </label>
       <input
         id={id}
         {...props}
-        className="border-foreground bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground mt-2 h-12 w-full rounded-full border-2 px-5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="border-input bg-foreground/5 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30 mt-2 h-13 w-full rounded-2xl border px-4 text-base font-medium outline-none focus-visible:ring-4"
       />
     </div>
   );

@@ -15,8 +15,10 @@ export default async function LoginPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
       <Wordmark />
-      <div className="border-foreground bg-card shadow-hard w-full max-w-sm rounded-3xl border-2 p-8">
-        <h1 className="font-display text-3xl tracking-tight uppercase">Staff</h1>
+      <div className="border-border bg-card shadow-hard w-full max-w-sm rounded-3xl border p-8">
+        <h1 className="font-display font-stretch-expanded font-extrabold text-3xl tracking-tight uppercase">
+          Staff
+        </h1>
         <p className="text-muted-foreground mt-2 text-sm font-medium">
           Entrá con tu mail y contraseña. Si no tenés cuenta, pedísela al admin.
         </p>
