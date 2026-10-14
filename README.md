@@ -27,21 +27,38 @@ pnpm dev
 
 ### ▶️ Comandos
 
-| Comando          | Qué hace                                    |
-| ---------------- | ------------------------------------------- |
-| `pnpm dev`       | Servidor de desarrollo                      |
-| `pnpm build`     | Build de producción                         |
-| `pnpm start`     | Sirve el build                              |
-| `pnpm lint`      | ESLint                                      |
-| `pnpm format`    | Prettier                                    |
-| `pnpm typecheck` | Chequeo de tipos                            |
-| `pnpm db:new`    | Crea una migración vacía                    |
-| `pnpm db:push`   | Aplica migraciones pendientes + regen tipos |
-| `pnpm db:types`  | Regenera los tipos desde el esquema remoto  |
+| Comando               | Qué hace                                          |
+| --------------------- | ------------------------------------------------- |
+| `pnpm dev`            | Servidor de desarrollo                            |
+| `pnpm build`          | Build de producción                               |
+| `pnpm start`          | Sirve el build                                    |
+| `pnpm lint`           | ESLint                                            |
+| `pnpm format`         | Prettier                                          |
+| `pnpm typecheck`      | Chequeo de tipos                                  |
+| `pnpm db:new`         | Crea una migración vacía                          |
+| `pnpm db:push`        | Aplica migraciones pendientes + regen tipos       |
+| `pnpm db:types`       | Regenera los tipos desde el esquema remoto        |
+| `pnpm db:local`       | Levanta Supabase local en Docker (puertos 544xx)  |
+| `pnpm db:local:reset` | Aplica migraciones + `supabase/seed.sql` en local |
+| `pnpm db:local:stop`  | Apaga el Supabase local                           |
+| `pnpm dev:local`      | Servidor de desarrollo contra el Supabase local   |
 
 ## 🗄️ Workflow con Supabase
 
-El esquema vive en `supabase/migrations/` y se aplica al proyecto remoto con la CLI. **No hay stack local**, así que no hace falta Docker.
+El esquema vive en `supabase/migrations/` y se aplica al proyecto remoto con la CLI. Hay **una sola base remota** para staging y producción: se separan por `events.is_test` (ver [Fechas de prueba](#-fechas-de-prueba)).
+
+### 🐳 Base local (Docker)
+
+Para desarrollar y probar migraciones sin tocar la nube:
+
+```bash
+pnpm db:local        # levanta Supabase en Docker (puertos 544xx)
+pnpm db:local:reset  # aplica migraciones + supabase/seed.sql
+pnpm dev:local       # corre la app contra esa base
+pnpm staff:set:local persona@mail.com admin <contraseña>
+```
+
+Toda migración nueva se prueba primero con `pnpm db:local:reset`.
 
 ### 🔑 Vincular el proyecto
 
@@ -67,7 +84,7 @@ pnpm db:push
 ## 🎟️ Venta de entradas
 
 ```
-/events/[slug] ──► create_order (reserva cupo 15 min) ──► Wallet Brick ──► Checkout Pro
+/ (home, #tickets) ──► create_order (reserva cupo 15 min) ──► orden de MP ──► Checkout Pro
                                                                   │
             /orders/[orderId] ◄── vuelve el comprador ◄───────────┤
                                                                   ▼
@@ -76,18 +93,29 @@ pnpm db:push
                                         /door/[slug] ──► check_in ◄── escanea ◄── /tickets/[code]
 ```
 
-- **Fechas y lotes** se cargan desde el dashboard de Supabase: una fila en `events` (con `status = 'published'` para que aparezca) y al menos una en `ticket_types` (precio en pesos, cupo). Varios lotes por fecha (Preventa 1, General…) ya están soportados.
-- **El cupo** se descuenta al crear la orden y se libera solo si no se paga en 15 minutos. Todo pasa por funciones de Postgres (`create_order`, `fulfill_order`, `check_in`) que bloquean filas, así no hay sobreventa ni doble ingreso.
+- **Una fiesta a la vez**: la home es la próxima edición publicada (la más cercana, si hubiera varias), presentada como una entrada que sale de una máquina expendedora al scrollear. La compra se completa en el talón del ticket (lote, cantidad y datos) y después se paga en Mercado Pago. `/#tickets` saca el ticket entero y baja hasta el talón. Sin ninguna publicada, la home muestra "próxima edición a confirmar" y el form de mail. `/events/[slug]` redirige a la home para no romper links viejos.
+- **La edición** se carga desde el dashboard de Supabase:
+  - Una fila en `events`: `title` (nombre de la edición, ej. "Moevius Vol. 13"), fechas, `venue`, `neighborhood`, `status = 'published'` para que aparezca e `is_test = false` si es real. Opcionales: `description` (cada línea es un párrafo) y `address` (para el link a Google Maps).
+  - **Lineup**: una fila por set en `event_sets` (`artist`, `starts_at` opcional para mostrar el horario, `sort_order`).
+  - Al menos una fila en `ticket_types` (precio en pesos, cupo). Varios lotes por fecha (Preventa 1, General…) ya están soportados.
+- **El cupo** se descuenta al crear la orden y se libera solo si no se paga en 15 minutos (un `pg_cron` vence las reservas cada minuto). Si alguien paga con la reserva vencida y ya no hay lugar, se le reembolsa solo.
+- Todo pasa por funciones de Postgres (`create_order`, `fulfill_order`, `check_in`) que bloquean filas, así no hay sobreventa ni doble ingreso.
 - **Antiabuso**: una reserva pendiente por mail y fecha (la nueva reemplaza a la anterior), máximo 3 pendientes por IP y fecha, y [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) en el form si están `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY`.
 - **Reembolsos y contracargos**: cuando MP notifica un pago `refunded` o `charged_back`, la orden pasa a reembolsada y sus entradas quedan anuladas (en la puerta dan "Entrada anulada"). Un reembolso **parcial** no anula nada: queda logueado para resolverlo a mano.
 - **Órdenes y entradas** no se leen desde el cliente: el server usa la secret key y el staff logueado las ve por RLS.
 
 ### 💳 Mercado Pago
 
-1. En [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) creá una app de Checkout Pro y copiá el **Access Token** a `MP_ACCESS_TOKEN` y la **Public Key** a `NEXT_PUBLIC_MP_PUBLIC_KEY` (la usa el Wallet Brick del front). En desarrollo usá las credenciales de prueba y [cuentas de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/your-integrations/test/accounts) para pagar.
-2. En **Webhooks** configurá la URL `https://<tu-dominio>/api/webhooks/mercadopago`, evento **Pagos** (cubre creación y actualización: así llegan también los reembolsos y contracargos), y copiá la clave secreta a `MP_WEBHOOK_SECRET`.
+El checkout usa la **API de Orders** de MP: el server crea la orden y el comprador va al `checkout_url` que devuelve MP.
 
-El webhook necesita una URL pública, así que el flujo completo se prueba en un deploy de preview. En local, al volver de MP la página `/orders/[orderId]` confirma el pago igual consultándolo a la API.
+1. En [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) creá una app de Checkout Pro y copiá el **Access Token** a `MP_ACCESS_TOKEN`. En desarrollo usá las credenciales `APP_USR-` del vendedor de [cuentas de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/additional-content/your-integrations/test/accounts) (tarjeta aprobada: titular `APRO`).
+2. En **Webhooks** de esa app configurá la URL `https://<tu-dominio>/api/webhooks/mercadopago`, evento **Order** (así llegan pagos, reembolsos y contracargos), y copiá la clave secreta a `MP_WEBHOOK_SECRET`. El webhook se configura por app, no por orden: la app de prueba apunta a staging (con `?x-vercel-protection-bypass=…`, porque tiene protección de Vercel) y la real a producción.
+
+En los demás previews y en local la compra se completa igual: la página `/orders/[orderId]` consulta la orden a MP mientras espera el pago.
+
+### 🧪 Fechas de prueba
+
+Producción (`VERCEL_ENV=production`) solo muestra y vende fechas con `is_test = false`; staging, previews y local, solo las de `is_test = true`. `create_order` también lo exige, así que una compra de prueba nunca ocupa cupo real.
 
 ### ✉️ Mails
 

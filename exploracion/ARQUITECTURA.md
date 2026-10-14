@@ -40,6 +40,73 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   con `orders.mp_preference_id` cuando producción use Orders.
 - Supabase local en puertos **544xx** (`supabase/config.toml`): otro proyecto (cashlist) usa 543xx.
 
+## Una sola fiesta en la home
+
+> 🔖 Sello: migración `20261013120000_event_content` · 2026-10-14
+
+- No hay grilla de fechas: la home (`getFeaturedEvent`) es la próxima fecha publicada,
+  presentada como un ticket que sale de una máquina al scrollear. La compra se llena en el
+  talón (`ticket-checkout.tsx`, un solo paso: lote, cantidad y datos → reserva → botón a
+  MP). `/#tickets` es el ancla del talón y `/events/[slug]` redirige ahí. `getEventBySlug`
+  sigue: lo usa `startCheckout` para validar lote y precio.
+- Turnstile en el talón va `compact` + `interaction-only`: el widget normal (300px) no entra
+  en el ticket en el celu.
+- Contenido de la edición: `events.description`, `address` y el lineup en `event_sets`. Todo
+  opcional: la página esconde lo que falta.
+- `events.lineup` (text[]) quedó sin uso pero **no se borró**: el código deployado lo lee.
+  Borrarlo junto con `mp_preference_id` y el `create_order` viejo cuando prod esté al día.
+
+## El tirón del ticket (`TicketPull`)
+
+> 🔖 Sello: 2026-10-14
+
+- La máquina queda `sticky` mientras sale el ticket. El tramo fijo es un **espaciador**
+  después del sticky (no `padding-bottom`: el sticky solo se desplaza dentro del contenido
+  de su contenedor): largo del tirón + una pausa al final (`HOLD_VIEWPORTS`).
+- El papel sigue al scroll con un resorte y se balancea según la velocidad, escribiendo
+  `transform` directo en el DOM. Las medidas se cachean y se toman solo con
+  `ResizeObserver` (ticket y `body`): leerlas en cada frame forzaba layout y trababa el
+  scroll.
+- **Tope al final**: frena el scroll justo cuando el ticket terminó de salir, pero solo el
+  de rueda/trackpad y el envión del dedo ya suelto. Arrastrar la barra, el autoscroll, el
+  teclado o el dedo apoyado no se frenan nunca: el tope y ese scroll se pelean y el
+  ticket titila.
+- El rebote puede sacar el papel ~150px más que su largo: arriba del ticket hay una "cola"
+  de papel (`h-svh`) escondida en la máquina, así por la ranura asoma papel y no un hueco.
+- Medidas atadas entre `Machine` (home), `TicketPull` y `Ticket` (están en el comentario de
+  `Machine`): el papel nace 3.5px adentro de la rendija (`-mt-[50px]`; justo en el borde se
+  ve una línea blanca) y tiene que ser más angosto que la rendija (si no, sobresale). Las
+  estrellas van adentro del papel por lo mismo.
+- La sombra de la ranura (`[data-slot-shadow]`) rota la mitad que el papel
+  (`SHADOW_SWING`). Arranca 24px arriba del pivote y un contenedor la recorta en el borde
+  de la rendija: rotada, si no, destapa papel adentro o se ve sobre el metal.
+- `PageLoader` tapa la home hasta `document.fonts.ready` (las fuentes cambian el alto del
+  ticket), con tope de 3 s. Sin JS no aparece (`@media (scripting: enabled)`).
+- Las luces del fondo son degradados (`glow`) en una capa fija con el grano: círculos con
+  `blur` animados y un blend del alto de la página trababan el scroll en el celu.
+- Dev: si una clase nueva de Tailwind no aparece en el navegador, el watcher de `next dev`
+  quedó trabado: reiniciarlo.
+
+## Design system (noche)
+
+> 🔖 Sello: 2026-10-14
+
+- La web es **siempre oscura** (no hay tema claro): tokens en `:root` de `globals.css`. Lima
+  (`--primary`) solo para lo que se toca; rojo (`--accent`) para las manchas del fondo, las
+  notas a mano del ticket y los avisos. Bordes: línea fina `border-border`, nunca
+  `border-foreground` grueso.
+- Titulares: Archivo variable con eje de ancho (`font-display font-stretch-expanded`).
+  Etiquetas técnicas: utilidad `label-mono` (Geist Mono). Notas a mano: Permanent Marker
+  (`doodles.tsx`).
+- La máquina y el papel son CSS puro (`chassis`, `slot-*`, `paper-crumple`, `torn-edge`,
+  `ticket-notch-*` en `globals.css`): no suman imágenes a la carga en el celu.
+- `body` y las secciones usan `overflow-clip` y no `hidden`: `hidden` las vuelve
+  contenedores de scroll y rompe los `sticky` (la máquina, el header).
+- `BRAND` en `lib/brand-colors.ts` replica los tokens en hex para manifest, íconos y
+  `theme-color`: si cambia un token, cambiarlo ahí también.
+- Inputs con `text-base` (16px): con menos, iOS hace zoom al enfocar.
+- Los mails (`src/emails/`) siguen con la estética vieja: no leen los tokens.
+
 ## Mercado Pago (API de Orders)
 
 > 🔖 Sello: migración `20261007130000_mp_orders` · 2026-10-07
