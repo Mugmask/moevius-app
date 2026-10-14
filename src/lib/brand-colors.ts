@@ -7,6 +7,4 @@ export const BRAND = {
   night: "#0f0d0d",
   /** --foreground */
   bone: "#f4efe6",
-  /** --primary */
-  acid: "#d6ff3d",
 } as const;
