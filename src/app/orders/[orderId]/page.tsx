@@ -5,9 +5,10 @@ import { after } from "next/server";
 import { z } from "zod";
 
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Pill } from "@/components/brand";
+import { ArrowUpRight } from "lucide-react";
 import { MpPayButton } from "@/components/mp-pay-button";
-import { SiteFooter, SiteHeader } from "@/components/site-chrome";
+import { INK_BUTTON, PaperSlip } from "@/components/paper-slip";
+import { SiteFooter } from "@/components/site-chrome";
 import { TicketView } from "@/components/ticket-view";
 import { TIME_FORMAT } from "@/lib/format";
 import {
@@ -17,6 +18,7 @@ import {
   sendTicketsEmailWithRetry,
   type OrderWithTickets,
 } from "@/lib/orders";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Tu compra · Moevius",
@@ -94,104 +96,97 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
 
   return (
     <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
-        {order.status === "paid" ? (
-          <>
-            <h1 className="font-display text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
-              Ya <span className="highlight">estás</span> adentro
-            </h1>
-            <p className="mt-6 max-w-xl text-lg font-medium">
-              Te mandamos {order.tickets.length === 1 ? "la entrada" : "las entradas"} a{" "}
-              <strong>{order.buyer_email}</strong>. Si no te llega, revisá spam o mostrá esta página
-              en la puerta.
-            </p>
-            <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {order.tickets.map((ticket) => (
-                <li key={ticket.id}>
-                  <TicketView
-                    event={order.event}
-                    ticket={ticket}
-                    ticketType={ticket.ticket_type.name}
-                    holder={order.buyer_name}
-                  />
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : inReview ? (
-          <StatusMessage title="Estamos revisando tu pago">
-            <p>
-              Mercado Pago está revisando el pago. Suele resolverse en minutos: apenas se apruebe,
-              las entradas aparecen acá y te llegan por mail. No hace falta que pagues de nuevo.
-            </p>
-            <AutoRefresh />
-          </StatusMessage>
-        ) : order.status === "needs_refund" ||
-          (order.status === "refunded" && order.paid_at === null) ? (
-          // Pagó con la reserva vencida y el cupo ya se había vendido.
-          <StatusMessage title="Se agotó mientras pagabas">
-            <p>
-              El pago llegó cuando tu reserva ya había vencido y no quedaban entradas. Te devolvemos
-              la plata completa a tu medio de pago (según el medio, puede tardar unos días en
-              verse).
-            </p>
-            <Pill
-              className="mt-8"
-              nativeButton={false}
-              render={<Link href={`/events/${order.event.slug}`} />}
-            >
-              Ver la fecha
-            </Pill>
-          </StatusMessage>
-        ) : order.status === "refunded" ? (
-          <StatusMessage title="Compra reembolsada">
-            <p>
-              Te devolvimos el pago de esta compra y las entradas quedaron anuladas. Si creés que es
-              un error, escribinos por Instagram con el mail de la compra.
-            </p>
-          </StatusMessage>
-        ) : expired ? (
-          <StatusMessage title="Se venció la reserva">
-            <p>
-              No llegamos a recibir el pago a tiempo y liberamos las entradas. Si te cobraron,
-              escribinos por Instagram con el mail de la compra.
-            </p>
-            <Pill
-              className="mt-8"
-              nativeButton={false}
-              render={<Link href={`/events/${order.event.slug}`} />}
-            >
-              Volver a comprar
-            </Pill>
-          </StatusMessage>
-        ) : rejection ? (
-          <StatusMessage title="No pasó el pago">
-            <p>
-              {rejection} Tu reserva sigue en pie hasta las <strong>{holdUntil}</strong>.
-            </p>
-            {order.mp_checkout_url && (
-              <div className="mt-8 max-w-sm">
-                <MpPayButton checkoutUrl={order.mp_checkout_url} />
-              </div>
-            )}
-          </StatusMessage>
-        ) : (
-          <StatusMessage title="Estamos esperando el pago">
-            <p>
-              Apenas Mercado Pago nos confirme el pago, las entradas aparecen acá y te llegan por
-              mail. Si cerraste la ventana sin pagar, podés hacerlo acá hasta las{" "}
-              <strong>{holdUntil}</strong>.
-            </p>
-            {order.mp_checkout_url && (
-              <div className="mt-8 max-w-sm">
-                <MpPayButton checkoutUrl={order.mp_checkout_url} />
-              </div>
-            )}
-            <AutoRefresh />
-          </StatusMessage>
-        )}
-      </main>
+      {order.status === "paid" ? (
+        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
+          <h1 className="font-display font-stretch-expanded font-extrabold text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
+            Ya <span className="highlight">estás</span> adentro
+          </h1>
+          <p className="mt-6 max-w-xl text-lg font-medium">
+            Te mandamos {order.tickets.length === 1 ? "la entrada" : "las entradas"} a{" "}
+            <strong>{order.buyer_email}</strong>. Si no te llega, revisá spam o mostrá esta página
+            en la puerta.
+          </p>
+          <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {order.tickets.map((ticket) => (
+              <li key={ticket.id}>
+                <TicketView
+                  event={order.event}
+                  ticket={ticket}
+                  ticketType={ticket.ticket_type.name}
+                  holder={order.buyer_name}
+                />
+              </li>
+            ))}
+          </ul>
+        </main>
+      ) : (
+        <main className="flex flex-1 flex-col">
+          {inReview ? (
+            <PaperSlip seed={order.id} label="Pago en revisión" title="Estamos revisando tu pago">
+              <p>
+                Mercado Pago está revisando el pago. Suele resolverse en minutos: apenas se apruebe,
+                las entradas aparecen acá y te llegan por mail. No hace falta que pagues de nuevo.
+              </p>
+              <Waiting />
+              <AutoRefresh />
+            </PaperSlip>
+          ) : order.status === "needs_refund" ||
+            (order.status === "refunded" && order.paid_at === null) ? (
+            // Pagó con la reserva vencida y el cupo ya se había vendido.
+            <PaperSlip seed={order.id} label="Reembolso en curso" title="Se agotó mientras pagabas">
+              <p>
+                El pago llegó cuando tu reserva ya había vencido y no quedaban entradas. Te
+                devolvemos la plata completa a tu medio de pago (según el medio, puede tardar unos
+                días en verse).
+              </p>
+              <Link href="/#tickets" className={cn(INK_BUTTON, "mt-6")}>
+                Ver la fiesta
+                <ArrowUpRight aria-hidden className="text-primary size-5" />
+              </Link>
+            </PaperSlip>
+          ) : order.status === "refunded" ? (
+            <PaperSlip seed={order.id} label="Compra anulada" title="Compra reembolsada">
+              <p>
+                Te devolvimos el pago de esta compra y las entradas quedaron anuladas. Si creés que
+                es un error, escribinos por Instagram con el mail de la compra.
+              </p>
+            </PaperSlip>
+          ) : expired ? (
+            <PaperSlip seed={order.id} label="Reserva vencida" title="Se venció la reserva">
+              <p>
+                No llegamos a recibir el pago a tiempo y liberamos las entradas. Si te cobraron,
+                escribinos por Instagram con el mail de la compra.
+              </p>
+              <Link href="/#tickets" className={cn(INK_BUTTON, "mt-6")}>
+                Volver a comprar
+                <ArrowUpRight aria-hidden className="text-primary size-5" />
+              </Link>
+            </PaperSlip>
+          ) : rejection ? (
+            <PaperSlip seed={order.id} label="Pago rechazado" title="No pasó el pago">
+              <p>
+                {rejection} Tu reserva sigue en pie hasta las <strong>{holdUntil}</strong>.
+              </p>
+              {order.mp_checkout_url && (
+                <MpPayButton checkoutUrl={order.mp_checkout_url} className="mt-6" />
+              )}
+            </PaperSlip>
+          ) : (
+            <PaperSlip seed={order.id} label="Pago pendiente" title="Estamos esperando el pago">
+              <p>
+                Apenas Mercado Pago nos confirme el pago, las entradas aparecen acá y te llegan por
+                mail. Si cerraste la ventana sin pagar, podés hacerlo acá hasta las{" "}
+                <strong>{holdUntil}</strong>.
+              </p>
+              {order.mp_checkout_url && (
+                <MpPayButton checkoutUrl={order.mp_checkout_url} className="mt-6" />
+              )}
+              <Waiting />
+              <AutoRefresh />
+            </PaperSlip>
+          )}
+        </main>
+      )}
       <SiteFooter />
     </>
   );
@@ -206,13 +201,12 @@ function isReservationExpired(order: Pick<OrderWithTickets, "status" | "expires_
   return order.status === "pending" && Date.parse(order.expires_at) < Date.now();
 }
 
-function StatusMessage({ title, children }: { title: string; children: React.ReactNode }) {
+/** La página se refresca sola (AutoRefresh): un punto que late para que se note. */
+function Waiting() {
   return (
-    <div className="max-w-xl">
-      <h1 className="font-display text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
-        {title}
-      </h1>
-      <div className="mt-6 text-lg font-medium">{children}</div>
-    </div>
+    <p className="mt-5 flex items-center gap-2.5 font-mono text-xs font-bold tracking-[0.15em] uppercase">
+      <span aria-hidden className="bg-accent size-2.5 animate-pulse rounded-full" />
+      Esperando a Mercado Pago · se actualiza solo
+    </p>
   );
 }

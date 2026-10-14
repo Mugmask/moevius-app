@@ -16,8 +16,8 @@ export function GET() {
     scope: "/door",
     display: "standalone",
     orientation: "portrait",
-    background_color: BRAND.ink,
-    theme_color: BRAND.ink,
+    background_color: BRAND.night,
+    theme_color: BRAND.night,
     // El mismo ícono sirve de "maskable": el punto está dentro de la zona segura.
     icons: [192, 512].flatMap((size) =>
       (["any", "maskable"] as const).map((purpose) => ({

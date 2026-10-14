@@ -114,7 +114,7 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
             spellCheck={false}
             enterKeyHint="go"
             // 16px: con menos, iOS hace zoom al tocar el input.
-            className="border-foreground bg-card h-12 min-w-0 flex-1 rounded-full border-2 px-4 text-base font-medium"
+            className="border-border bg-card h-12 min-w-0 flex-1 rounded-full border px-4 text-base font-medium"
           />
           <button
             type="submit"
@@ -136,7 +136,7 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
               : "bg-destructive text-white",
           )}
         >
-          <span className="font-display text-6xl leading-none uppercase">
+          <span className="font-display font-stretch-expanded text-5xl leading-none font-extrabold text-balance uppercase">
             {RESULT_MESSAGES[result.result]}
           </span>
           {result.buyer_name && (
@@ -149,7 +149,12 @@ export function DoorScanner({ action }: { action: (scanned: string) => Promise<C
               Escaneada a las {TIME_FORMAT.format(new Date(result.checked_in_at))}
             </span>
           )}
-          <Pill tone="paper" render={<span />} nativeButton={false} className="mt-6">
+          <Pill
+            tone="outline"
+            render={<span />}
+            nativeButton={false}
+            className="mt-6 border-current text-current"
+          >
             Siguiente
           </Pill>
         </button>

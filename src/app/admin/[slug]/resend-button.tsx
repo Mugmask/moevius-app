@@ -13,7 +13,7 @@ export function ResendButton({ orderId }: { orderId: string }) {
       type="button"
       disabled={pending || state.status === "ok"}
       onClick={() => startTransition(async () => setState(await resendTickets(orderId)))}
-      className="border-foreground hover:bg-muted rounded-full border-2 px-3 py-1 text-xs font-bold whitespace-nowrap disabled:opacity-60"
+      className="border-border hover:bg-muted rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap disabled:opacity-60"
     >
       {pending
         ? "Mandando…"

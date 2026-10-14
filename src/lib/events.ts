@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { FEW_LEFT_THRESHOLD } from "@/lib/config";
 import { TEST_MODE } from "@/lib/environment";
 import { TIMEZONE } from "@/lib/format";
@@ -7,6 +9,9 @@ import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 export type Availability = "on-sale" | "few-left" | "sold-out";
+
+/** Un set del lineup. `time` es "01:30" en hora de Argentina, o null si no tiene horario. */
+export type LineupSet = { artist: string; time: string | null };
 
 /** Un lote: tipo de entrada con precio y cupo propios ("General", "Preventa 1"). */
 export type TicketTier = {
@@ -31,7 +36,12 @@ export type EventListing = {
   time: string;
   venue: string;
   neighborhood: string;
-  lineup: string[];
+  /** Párrafos de la bajada de la edición (vacío si no se cargó). */
+  description: string[];
+  address: string | null;
+  /** Link de Google Maps a la dirección (o al lugar, si no hay dirección). */
+  mapsUrl: string;
+  lineup: LineupSet[];
   /** Precio del lote más barato que todavía está a la venta. */
   price: number;
   availability: Availability;
@@ -39,13 +49,21 @@ export type EventListing = {
   tiers: TicketTier[];
 };
 
-type EventRow = Tables<"events"> & { ticket_types: Tables<"ticket_types">[] };
+type EventRow = Tables<"events"> & {
+  ticket_types: Tables<"ticket_types">[];
+  event_sets: Tables<"event_sets">[];
+};
 
-const EVENT_SELECT = "*, ticket_types(*)" as const;
+const EVENT_SELECT = "*, ticket_types(*), event_sets(*)" as const;
 
-export async function getUpcomingEvents(): Promise<EventListing[]> {
+/**
+ * La fiesta que promociona la home: la próxima fecha publicada que todavía no terminó.
+ * Hay una sola edición a la vez; si se cargan varias, manda la más cercana. Con `cache`:
+ * la home la pide para la metadata y para la página, y va una sola vez a la DB.
+ */
+export const getFeaturedEvent = cache(async (): Promise<EventListing | null> => {
   const supabase = await createClient();
-  const [{ data: events, error }, availability] = await Promise.all([
+  const [{ data: event, error }, availability] = await Promise.all([
     supabase
       .from("events")
       .select(EVENT_SELECT)
@@ -53,13 +71,15 @@ export async function getUpcomingEvents(): Promise<EventListing[]> {
       .eq("status", "published")
       .eq("is_test", TEST_MODE)
       .gt("ends_at", new Date().toISOString())
-      .order("starts_at"),
+      .order("starts_at")
+      .limit(1)
+      .maybeSingle(),
     getAvailability(),
   ]);
   if (error) throw error;
 
-  return events.map((event) => toEventListing(event, availability));
-}
+  return event ? toEventListing(event, availability) : null;
+});
 
 export async function getEventBySlug(slug: string): Promise<EventListing | null> {
   const supabase = await createClient();
@@ -83,14 +103,23 @@ export async function getEventBySlug(slug: string): Promise<EventListing | null>
 export function formatEventDates(event: Pick<Tables<"events">, "starts_at" | "ends_at">) {
   const format = (options: Intl.DateTimeFormatOptions, date: string) =>
     new Intl.DateTimeFormat("es-AR", { timeZone: TIMEZONE, ...options }).format(new Date(date));
-  const hourMinute = { hour: "2-digit", minute: "2-digit", hour12: false } as const;
 
   return {
     day: `${format({ weekday: "short" }, event.starts_at).replace(".", "")} ${format({ day: "2-digit" }, event.starts_at)}`.toUpperCase(),
     month: format({ month: "long" }, event.starts_at).toUpperCase(),
     year: format({ year: "numeric" }, event.starts_at),
-    time: `${format(hourMinute, event.starts_at)} — ${format(hourMinute, event.ends_at)}`,
+    time: `${formatTime(event.starts_at)} — ${formatTime(event.ends_at)}`,
   };
+}
+
+/** "23:59", en hora de Argentina. */
+function formatTime(date: string) {
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone: TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(date));
 }
 
 async function getAvailability() {
@@ -142,7 +171,25 @@ function toEventListing(
     ...formatEventDates(event),
     venue: event.venue,
     neighborhood: event.neighborhood,
-    lineup: event.lineup,
+    description: (event.description ?? "")
+      .split("\n")
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
+    address: event.address,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      event.address ?? `${event.venue}, ${event.neighborhood}`,
+    )}`,
+    lineup: [...event.event_sets]
+      .sort(
+        (a, b) =>
+          a.sort_order - b.sort_order ||
+          (a.starts_at ?? "").localeCompare(b.starts_at ?? "") ||
+          a.artist.localeCompare(b.artist),
+      )
+      .map((set) => ({
+        artist: set.artist,
+        time: set.starts_at ? formatTime(set.starts_at) : null,
+      })),
     price: Number.isFinite(price) ? price : 0,
     availability: status,
     tiers,

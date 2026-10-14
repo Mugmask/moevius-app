@@ -50,7 +50,7 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
     <>
       <StaffHeader email={staff.user.email} role={staff.role} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
-        <h1 className="font-display text-5xl tracking-tight uppercase">
+        <h1 className="font-display font-stretch-expanded font-extrabold text-5xl tracking-tight uppercase">
           {day} {month} {year}
         </h1>
 
@@ -59,7 +59,7 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
             name="q"
             defaultValue={search}
             placeholder="Buscar por mail, nombre o DNI"
-            className="border-foreground bg-card h-11 flex-1 rounded-full border-2 px-4 text-sm font-medium"
+            className="border-border bg-card h-11 flex-1 rounded-full border px-4 text-sm font-medium"
           />
           <button
             type="submit"
@@ -69,9 +69,9 @@ export default async function AdminEventPage({ params, searchParams }: PageProps
           </button>
         </form>
 
-        <div className="border-foreground mt-8 overflow-x-auto rounded-2xl border-2">
+        <div className="border-border mt-8 overflow-x-auto rounded-2xl border">
           <table className="bg-card w-full min-w-[48rem] text-left text-sm">
-            <thead className="border-foreground border-b-2 text-xs uppercase">
+            <thead className="border-border border-b text-xs uppercase">
               <tr>
                 <th className="px-4 py-3">Comprador</th>
                 <th className="px-4 py-3">DNI</th>

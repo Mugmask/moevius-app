@@ -6,7 +6,7 @@ import type { StaffRole } from "@/lib/staff";
 
 export function StaffHeader({ email, role }: { email?: string; role: StaffRole }) {
   return (
-    <header className="border-foreground bg-card border-b-2">
+    <header className="border-border bg-card border-b">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-6">
           <Link href={role === "admin" ? "/admin" : "/door"}>

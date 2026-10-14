@@ -12,32 +12,32 @@ export function SubscribeForm() {
 
   if (state.status === "ok") {
     return (
-      <p className="font-display text-primary-foreground relative mt-10 text-2xl uppercase">
-        Listo, te avisamos.
+      <p role="status" className="label-mono text-primary relative mt-8">
+        ✓ Listo, te avisamos.
       </p>
     );
   }
 
   return (
-    <form action={action} className="relative mx-auto mt-10 flex max-w-lg flex-col gap-3">
+    <form action={action} className="relative mt-8 flex max-w-lg flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row">
-        <label className="sr-only" htmlFor="email">
+        <label className="sr-only" htmlFor="subscribe-email">
           Tu email
         </label>
         <input
-          id="email"
+          id="subscribe-email"
           name="email"
           type="email"
           required
           placeholder="tumail@ejemplo.com"
-          className="border-foreground bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-foreground h-12 rounded-full sm:flex-1 border-2 px-5 font-medium outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="border-input bg-foreground/5 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30 h-12 rounded-full border px-5 text-base font-medium outline-none focus-visible:ring-4 sm:flex-1"
         />
         <Pill type="submit" className="justify-center" disabled={pending}>
           {pending ? "Anotando…" : "Avisame"}
         </Pill>
       </div>
       {state.status === "error" && (
-        <p role="alert" className="text-primary-foreground text-sm font-bold">
+        <p role="alert" className="text-accent text-sm font-semibold">
           {state.message}
         </p>
       )}

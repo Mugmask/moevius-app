@@ -9,3 +9,6 @@ next-env.d.ts
 # Generados por la CLI de Supabase
 supabase/.temp
 src/lib/supabase/database.types.ts
+
+# Grafo local de graphify (no se commitea)
+graphify-out

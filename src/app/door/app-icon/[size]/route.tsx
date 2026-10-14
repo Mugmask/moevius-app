@@ -17,7 +17,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/door/app
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: BRAND.ink,
+        background: BRAND.night,
       }}
     >
       {/* 50%: queda dentro de la zona segura de los íconos "maskable" de Android. */}
@@ -26,8 +26,8 @@ export async function GET(_request: Request, { params }: RouteContext<"/door/app
           width: size * 0.5,
           height: size * 0.5,
           borderRadius: "50%",
-          background: BRAND.green,
-          border: `${Math.round(size * 0.03)}px solid ${BRAND.paper}`,
+          background: BRAND.acid,
+          border: `${Math.round(size * 0.03)}px solid ${BRAND.bone}`,
         }}
       />
     </div>,

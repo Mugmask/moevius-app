@@ -1,60 +1,40 @@
 import Link from "next/link";
 
-import { Pill, Wordmark } from "@/components/brand";
+import { CONSUMER_DEFENSE_URL } from "@/lib/legal";
 
-const SOCIAL_LINKS = [{ name: "Instagram", url: "https://www.instagram.com/moevius_" }];
+const LEGAL_LINKS = [
+  { label: "Términos y condiciones", href: "/terminos" },
+  { label: "Privacidad", href: "/privacidad" },
+  { label: "Botón de arrepentimiento", href: "/arrepentimiento" },
+];
 
-export function SiteHeader() {
-  return (
-    <header className="sticky top-0 z-50 px-4 pt-4">
-      <div className="border-foreground bg-card mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border-2 pr-2 pl-6">
-        <Link href="/">
-          <Wordmark />
-        </Link>
-        <nav className="hidden items-center gap-1 text-sm font-semibold md:flex">
-          <Link className="hover:bg-muted rounded-full px-4 py-2 transition-colors" href="/#events">
-            Fechas
-          </Link>
-          <Link
-            className="hover:bg-muted rounded-full px-4 py-2 transition-colors"
-            href="/#production"
-          >
-            Productora
-          </Link>
-          <Link
-            className="hover:bg-muted rounded-full px-4 py-2 transition-colors"
-            href="/#how-it-works"
-          >
-            Tu entrada
-          </Link>
-        </nav>
-        <Pill className="h-12" nativeButton={false} render={<Link href="/#events" />}>
-          Comprar entrada
-        </Pill>
-      </div>
-    </header>
-  );
-}
+const LINK =
+  "hover:text-foreground inline-flex min-h-10 items-center justify-center transition-colors";
 
+/**
+ * El pie: una fila con los links legales. El Botón de arrepentimiento y el de
+ * reclamos de Defensa del Consumidor tienen que estar a mano desde la home: van acá.
+ */
 export function SiteFooter() {
   return (
-    <footer className="bg-foreground text-background">
-      <div className="mx-auto flex max-w-6xl flex-row justify-between gap-8 px-6 py-12">
-        <p className="text-sm font-medium opacity-70">Mar del Plata, Argentina</p>
-        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-          <ul className="flex flex-wrap gap-2">
-            {SOCIAL_LINKS.map(({ name, url }) => (
-              <li key={name}>
-                <a
-                  href={url}
-                  className="border-background hover:bg-background hover:text-foreground rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors"
-                >
-                  {name}
-                </a>
+    <footer className="border-border border-t">
+      <div className="label-mono text-muted-foreground mx-auto flex max-w-6xl flex-col items-center px-5 pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-center">
+        <nav aria-label="Legal">
+          <ul className="flex flex-wrap justify-center gap-x-5 gap-y-0 text-[0.6875rem] whitespace-nowrap sm:gap-x-6 sm:text-xs">
+            {LEGAL_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={LINK}>
+                  {link.label}
+                </Link>
               </li>
             ))}
+            <li>
+              <a href={CONSUMER_DEFENSE_URL} target="_blank" rel="noreferrer" className={LINK}>
+                Defensa del consumidor
+              </a>
+            </li>
           </ul>
-        </div>
+        </nav>
       </div>
     </footer>
   );

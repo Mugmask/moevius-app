@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: BRAND.ink,
+  themeColor: BRAND.night,
 };
 
 export default function DoorLayout({ children }: LayoutProps<"/door">) {

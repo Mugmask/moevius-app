@@ -4,9 +4,9 @@
  */
 export const BRAND = {
   /** --background */
-  paper: "#f3f1ea",
+  night: "#0f0d0d",
   /** --foreground */
-  ink: "#141310",
+  bone: "#f4efe6",
   /** --primary */
-  green: "#5df65b",
+  acid: "#d6ff3d",
 } as const;

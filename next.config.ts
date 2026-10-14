@@ -14,5 +14,7 @@ export default function config(phase: string): NextConfig {
     }
   }
 
-  return {};
+  return {
+    allowedDevOrigins: ["192.168.100.3"],
+  };
 }

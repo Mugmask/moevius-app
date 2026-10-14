@@ -40,6 +40,87 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   con `orders.mp_preference_id` cuando producción use Orders.
 - Supabase local en puertos **544xx** (`supabase/config.toml`): otro proyecto (cashlist) usa 543xx.
 
+## Una sola fiesta en la home
+
+> 🔖 Sello: migración `20261013120000_event_content` · 2026-10-14
+
+- No hay grilla de fechas: la home (`getFeaturedEvent`) es la próxima fecha publicada,
+  presentada como un ticket que sale de una máquina al scrollear. La compra se llena en el
+  talón (`ticket-checkout.tsx`, un solo paso: datos, lote y cantidad → reserva → botón a
+  MP). `/#tickets` es el ancla del talón y `/events/[slug]` redirige ahí. `getEventBySlug`
+  sigue: lo usa `startCheckout` para validar lote y precio.
+- Turnstile en el talón va `compact` + `interaction-only`: el widget normal (300px) no entra
+  en el ticket en el celu.
+- Contenido de la edición: `events.description`, `address` y el lineup en `event_sets`. Todo
+  opcional: la página esconde lo que falta.
+- `events.lineup` (text[]) quedó sin uso pero **no se borró**: el código deployado lo lee.
+  Borrarlo junto con `mp_preference_id` y el `create_order` viejo cuando prod esté al día.
+
+## El tirón del ticket (`TicketPull`)
+
+> 🔖 Sello: 2026-10-14
+
+- La máquina queda `sticky` mientras sale el ticket. El tramo fijo es un **espaciador**
+  después del sticky (no `padding-bottom`: el sticky solo se desplaza dentro del contenido
+  de su contenedor): largo del tirón + una pausa al final (`HOLD_VIEWPORTS`).
+- **El papel lo mueve el navegador**, 1:1 con el scroll: una scroll-driven animation
+  (`ticket-pull-driven` en `globals.css`) que corre en el hilo del scroll. `TicketPull`
+  solo mide (con `ResizeObserver`) y escribe los keyframes en px y el `animation-range`.
+  Sin soporte (iOS < 26, Firefox) hace lo mismo desde JS, también 1:1.
+- Detección del camino nativo: `"ScrollTimeline" in window`, **no** `CSS.supports("animation-timeline", …)`:
+  Chrome 155 aplica la propiedad en las hojas de estilo pero ahí devuelve false (hasta con
+  `auto`), y el ticket caía al respaldo de JS sin que se notara.
+- La seña "Bajá para sacar tu ticket" (`PullHint`) va fija abajo en el hueco de la primera
+  pantalla y la apagan dos IntersectionObserver (el borde del papel llega a la franja de abajo,
+  o ya no estás en la primera pantalla). Nada por scroll.
+- La "vida" del papel también es del navegador: `ticket-sway` (se mece < 1° atado al
+  mismo tramo del scroll, gira desde la ranura; solo con soporte nativo) y `ticket-drop`
+  (caída al cargar, cuando cargan las fuentes; no con el ancla). Nada de movimiento por
+  frame desde JS.
+- **No volver a mover el papel desde JS con resorte, ni frenar o imantar el scroll**: en
+  el celu (120Hz) el papel iba un paso atrás del dedo y se sentía trabado; frenar el
+  envión se peleaba con el scroll del sistema; y un `scroll-snap` de proximidad tiraba la
+  página para atrás desde casi 700px, en pleno formulario del talón.
+- La animación actualiza el papel recién en el próximo frame: justo después de un
+  `scrollTo`, el `getBoundingClientRect` de algo del ticket es el viejo (ver el ancla
+  `/#tickets`, que descuenta el desplazamiento actual).
+- La barra del navegador del celu dispara `resize` al scrollear: la pausa se calcula con el
+  alto de pantalla del arranque y solo cambia si cambia el ancho.
+- Medidas atadas entre `Machine` (home), `TicketPull` y `Ticket` (están en el comentario de
+  `Machine`): el papel nace 3.5px adentro de la rendija (`-mt-[50px]`; justo en el borde se
+  ve una línea blanca) y tiene que ser más angosto que la rendija (si no, sobresale). Las
+  estrellas van adentro del papel por lo mismo.
+- Pensado para la GPU del celu: la sombra del papel es un `box-shadow` en un elemento
+  aparte (un `filter: drop-shadow` sobre el ticket se recalculaba en cada frame), y las
+  luces del fondo de la home son degradados quietos en una capa fija con el grano (blur
+  animado y luces en movimiento recomponían la pantalla entera en cada frame).
+- `PageLoader` tapa la home hasta `document.fonts.ready` (las fuentes cambian el alto del
+  ticket), con tope de 3 s. Sin JS no aparece (`@media (scripting: enabled)`).
+- Probar la fluidez en el celu con el build (`pnpm build` + `pnpm start`), no con `pnpm dev`:
+  el modo desarrollo es mucho más pesado en el teléfono.
+- Dev: si una clase nueva de Tailwind no aparece en el navegador, el watcher de `next dev`
+  quedó trabado: reiniciarlo.
+
+## Design system (noche)
+
+> 🔖 Sello: 2026-10-14
+
+- La web es **siempre oscura** (no hay tema claro): tokens en `:root` de `globals.css`. Lima
+  (`--primary`) solo para lo que se toca; rojo (`--accent`) para las manchas del fondo, las
+  notas a mano del ticket y los avisos. Bordes: línea fina `border-border`, nunca
+  `border-foreground` grueso.
+- Titulares: Archivo variable con eje de ancho (`font-display font-stretch-expanded`).
+  Etiquetas técnicas: utilidad `label-mono` (Geist Mono). Notas a mano: Permanent Marker
+  (`doodles.tsx`).
+- La máquina y el papel son CSS puro (`chassis`, `slot-*`, `paper-crumple`, `torn-edge`,
+  `ticket-notch-*` en `globals.css`): no suman imágenes a la carga en el celu.
+- `body` y las secciones usan `overflow-clip` y no `hidden`: `hidden` las vuelve
+  contenedores de scroll y rompe los `sticky` (la máquina).
+- `BRAND` en `lib/brand-colors.ts` replica los tokens en hex para manifest, íconos y
+  `theme-color`: si cambia un token, cambiarlo ahí también.
+- Inputs con `text-base` (16px): con menos, iOS hace zoom al enfocar.
+- Los mails (`src/emails/`) siguen con la estética vieja: no leen los tokens.
+
 ## Mercado Pago (API de Orders)
 
 > 🔖 Sello: migración `20261007130000_mp_orders` · 2026-10-07
@@ -70,3 +151,15 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
   llamada. `WebhookSignatureValidator` no pasa el `data.id` a minúsculas: hacerlo antes.
 - Sandbox: credenciales `APP_USR-` del vendedor de prueba; acepta mails de comprador reales.
   Tarjeta de prueba aprobada: titular `APRO`.
+
+## Legal (términos, privacidad, arrepentimiento)
+
+> 🔖 Sello: 2026-10-14
+
+- Los datos del organizador (nombre, mail y, opcionales, CUIT y domicilio) viven en `src/lib/legal.ts`
+  y los usan el footer, `/terminos`, `/privacidad` y `/arrepentimiento`. Tienen placeholders:
+  **completarlos antes de vender en producción**.
+- El Botón de arrepentimiento (Res. SCI 424/2020) tiene que estar a mano desde la home: va en
+  el footer. El pedido **no se guarda en la base**: manda un mail a `LEGAL.email` y la
+  constancia con el código `ARR-…` al comprador. La devolución y la anulación son a mano.
+- El footer lleva el link a la Ventanilla Única de Defensa del Consumidor.
