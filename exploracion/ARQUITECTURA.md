@@ -63,27 +63,31 @@ Lo que el código no cuenta. Para estructura (dónde está X, qué llama a Y): `
 - La máquina queda `sticky` mientras sale el ticket. El tramo fijo es un **espaciador**
   después del sticky (no `padding-bottom`: el sticky solo se desplaza dentro del contenido
   de su contenedor): largo del tirón + una pausa al final (`HOLD_VIEWPORTS`).
-- El papel sigue al scroll con un resorte y se balancea según la velocidad, escribiendo
-  `transform` directo en el DOM. Las medidas se cachean y se toman solo con
-  `ResizeObserver` (ticket y `body`): leerlas en cada frame forzaba layout y trababa el
-  scroll.
-- **Tope al final**: frena el scroll justo cuando el ticket terminó de salir, pero solo el
-  de rueda/trackpad y el envión del dedo ya suelto. Arrastrar la barra, el autoscroll, el
-  teclado o el dedo apoyado no se frenan nunca: el tope y ese scroll se pelean y el
-  ticket titila.
-- El rebote puede sacar el papel ~150px más que su largo: arriba del ticket hay una "cola"
-  de papel (`h-svh`) escondida en la máquina, así por la ranura asoma papel y no un hueco.
+- **El papel lo mueve el navegador**, 1:1 con el scroll: una scroll-driven animation
+  (`ticket-pull-driven` en `globals.css`) que corre en el hilo del scroll. `TicketPull`
+  solo mide (con `ResizeObserver`) y escribe los keyframes en px y el `animation-range`.
+  Sin soporte (iOS < 26, Firefox) hace lo mismo desde JS, también 1:1.
+- **No volver a mover el papel desde JS con resorte, ni frenar o imantar el scroll**: en
+  el celu (120Hz) el papel iba un paso atrás del dedo y se sentía trabado; frenar el
+  envión se peleaba con el scroll del sistema; y un `scroll-snap` de proximidad tiraba la
+  página para atrás desde casi 700px, en pleno formulario del talón.
+- La animación actualiza el papel recién en el próximo frame: justo después de un
+  `scrollTo`, el `getBoundingClientRect` de algo del ticket es el viejo (ver el ancla
+  `/#tickets`, que descuenta el desplazamiento actual).
+- La barra del navegador del celu dispara `resize` al scrollear: la pausa se calcula con el
+  alto de pantalla del arranque y solo cambia si cambia el ancho.
 - Medidas atadas entre `Machine` (home), `TicketPull` y `Ticket` (están en el comentario de
   `Machine`): el papel nace 3.5px adentro de la rendija (`-mt-[50px]`; justo en el borde se
   ve una línea blanca) y tiene que ser más angosto que la rendija (si no, sobresale). Las
   estrellas van adentro del papel por lo mismo.
-- La sombra de la ranura (`[data-slot-shadow]`) rota la mitad que el papel
-  (`SHADOW_SWING`). Arranca 24px arriba del pivote y un contenedor la recorta en el borde
-  de la rendija: rotada, si no, destapa papel adentro o se ve sobre el metal.
+- Pensado para la GPU del celu: la sombra del papel es un `box-shadow` en un elemento
+  aparte (un `filter: drop-shadow` sobre el ticket se recalculaba en cada frame), y las
+  luces del fondo de la home son degradados quietos en una capa fija con el grano (blur
+  animado y luces en movimiento recomponían la pantalla entera en cada frame).
 - `PageLoader` tapa la home hasta `document.fonts.ready` (las fuentes cambian el alto del
   ticket), con tope de 3 s. Sin JS no aparece (`@media (scripting: enabled)`).
-- Las luces del fondo son degradados (`glow`) en una capa fija con el grano: círculos con
-  `blur` animados y un blend del alto de la página trababan el scroll en el celu.
+- Probar la fluidez en el celu con el build (`pnpm build` + `pnpm start`), no con `pnpm dev`:
+  el modo desarrollo es mucho más pesado en el teléfono.
 - Dev: si una clase nueva de Tailwind no aparece en el navegador, el watcher de `next dev`
   quedó trabado: reiniciarlo.
 

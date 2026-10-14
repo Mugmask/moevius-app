@@ -190,9 +190,13 @@
 }
 
 /*
- * El ticket que se tironea (ver TicketPull): arranca adentro de la máquina y el JS lo
- * va sacando. Sin JS o con animaciones reducidas no aplica y el ticket se ve entero.
- * El recorte del contenedor deja pasar todo salvo lo que está arriba de la ranura.
+ * El ticket que se tironea (ver TicketPull): arranca adentro de la máquina y sale con el
+ * scroll. Sin JS o con animaciones reducidas no aplica y el ticket se ve entero. El
+ * recorte del contenedor deja pasar todo salvo lo que está arriba de la ranura.
+ *
+ * `ticket-pull-driven`: el papel lo mueve una animación atada al scroll de la página, que
+ * corre en el mismo hilo que el scroll (va pegada al dedo). Los keyframes (`ticket-pull`,
+ * en px) y el tramo (`animation-range`) los escribe TicketPull con lo que mide.
  */
 .ticket-pull {
   clip-path: inset(0 -100% -100% -100%);
@@ -202,6 +206,11 @@
   .ticket-pull [data-ticket] {
     transform: translateY(-100%);
     will-change: transform;
+  }
+
+  .ticket-pull [data-ticket].ticket-pull-driven {
+    animation: ticket-pull linear both;
+    animation-timeline: scroll(root);
   }
 }
 
@@ -322,10 +331,10 @@
 @utility slot-depth {
   background: linear-gradient(
     180deg,
-    oklch(0 0 0) 0 52%,
-    oklch(0 0 0 / 0.75) 60%,
-    oklch(0 0 0 / 0.4) 72%,
-    oklch(0 0 0 / 0.15) 86%,
+    oklch(0 0 0) 0 33%,
+    oklch(0 0 0 / 0.75) 45%,
+    oklch(0 0 0 / 0.4) 62%,
+    oklch(0 0 0 / 0.15) 80%,
     transparent
   );
 }

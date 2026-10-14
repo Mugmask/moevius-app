@@ -78,29 +78,30 @@ function Aura() {
 /**
  * Las manchas de luz, por debajo del grano (`-z-20`). Son degradados (`glow`), no
  * círculos con `blur`: un blur grande animado se re-rasteriza en cada frame y traba el
- * scroll en el celu.
+ * scroll en el celu. Las del ticket van quietas: animadas, el fondo (con el grano
+ * mezclado encima) se recomponía entero en cada frame mientras se scrollea.
  */
 function Lights({ placement }: { placement: "coming-soon" | "ticket" }) {
-  const blob = "glow animate-drift pointer-events-none absolute -z-20 rounded-full";
+  const blob = "glow pointer-events-none absolute -z-20 rounded-full";
   if (placement === "coming-soon") {
     return (
       <div aria-hidden>
         <div
           className={cn(
             blob,
-            "text-accent -top-[10%] -left-[30%] size-[110vw] max-w-[52rem] opacity-55 lg:left-[5%]",
+            "animate-drift text-accent -top-[10%] -left-[30%] size-[110vw] max-w-[52rem] opacity-55 lg:left-[5%]",
           )}
         />
         <div
           className={cn(
             blob,
-            "text-accent top-[30%] -right-[35%] size-[80vw] max-w-[36rem] opacity-45 [animation-delay:-6s] lg:right-0",
+            "animate-drift text-accent top-[30%] -right-[35%] size-[80vw] max-w-[36rem] opacity-45 [animation-delay:-6s] lg:right-0",
           )}
         />
         <div
           className={cn(
             blob,
-            "text-primary top-[60%] left-[10%] size-[45vw] max-w-[20rem] opacity-15 [animation-delay:-12s]",
+            "animate-drift text-primary top-[60%] left-[10%] size-[45vw] max-w-[20rem] opacity-15 [animation-delay:-12s]",
           )}
         />
       </div>
@@ -183,17 +184,8 @@ function Machine() {
       <div className="slot-bezel rounded-2xl px-1.5 py-2 sm:px-2">
         <div className="slot-opening relative h-5 rounded-full">
           {/* Sombra sobre el papel: su mismo ancho, de adentro de la rendija hasta 40px abajo
-              del labio. Acompaña el balanceo del papel (TicketPull la rota la mitad, con el
-              mismo pivote: donde nace el papel, 3.5px adentro de la rendija), así con el rebote
-              no le quedan bordes sin sombra. Arranca 24px más arriba (negro): rotada, el
-              lado que baja sigue tapando el papel adentro de la rendija. El contenedor la
-              recorta en el borde de arriba de la rendija, si no se vería sobre el metal. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[calc(100%+2.5rem)] [clip-path:inset(0_-100%_-100%_-100%)]">
-            <div
-              data-slot-shadow
-              className="slot-depth absolute inset-x-[10px] -top-6 bottom-0 origin-[50%_27.5px] sm:inset-x-[14px]"
-            />
-          </div>
+              del labio. */}
+          <div className="slot-depth pointer-events-none absolute inset-x-[10px] top-0 z-20 h-[calc(100%+2.5rem)] sm:inset-x-[14px]" />
         </div>
       </div>
     </div>
@@ -224,16 +216,13 @@ function Ticket({
   const edition = event.title.replace(/^moevius\s*/i, "");
 
   return (
-    <article
-      data-ticket
-      className="text-ink relative mx-5 drop-shadow-[0_24px_30px_oklch(0_0_0/0.55)] sm:mx-10"
-    >
+    <article data-ticket className="text-ink relative isolate mx-5 sm:mx-10">
       <MarkerFilter />
 
-      {/* Cola del rollo: papel que sigue arriba del ticket, escondido adentro de la máquina.
-          Cuando el rebote del tirón (TicketPull) lo saca de más, por la ranura asoma
-          papel y no un hueco. */}
-      <div aria-hidden className="bg-paper paper-crumple absolute inset-x-0 bottom-full h-svh" />
+      {/* Sombra del papel: un box-shadow que se pinta una vez y viaja con el ticket. Con
+          `filter: drop-shadow` la GPU recalculaba el desenfoque en cada frame del tirón
+          (el ticket mide miles de px a densidad 3x) y trababa el scroll en el celu. */}
+      <div aria-hidden className="absolute inset-0 -z-10 shadow-[0_24px_30px_oklch(0_0_0/0.55)]" />
 
       <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-9 pb-7 lg:pt-12")}>
         {/* Las estrellas van adentro del papel: lo que se pasa del borde se vería salir
