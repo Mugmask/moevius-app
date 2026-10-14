@@ -5,11 +5,15 @@ import { after } from "next/server";
 import { z } from "zod";
 
 import { AutoRefresh } from "@/components/auto-refresh";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { AuraBackdrop } from "@/components/aura-backdrop";
+import { MarkerFilter } from "@/components/doodles";
 import { MpPayButton } from "@/components/mp-pay-button";
 import { INK_BUTTON, PaperSlip } from "@/components/paper-slip";
+import { RememberTicket } from "@/components/saved-tickets";
 import { SiteFooter } from "@/components/site-chrome";
 import { TicketView } from "@/components/ticket-view";
+import { savedTicketLabel } from "@/lib/events";
 import { TIME_FORMAT } from "@/lib/format";
 import {
   getOrder,
@@ -97,8 +101,22 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
   return (
     <>
       {order.status === "paid" ? (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16">
-          <h1 className="font-display font-stretch-expanded font-extrabold text-5xl leading-[0.95] tracking-tight uppercase sm:text-6xl">
+        <main className="relative isolate mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-16 sm:px-6">
+          <MarkerFilter />
+          <AuraBackdrop />
+          <Link
+            href="/"
+            className="label-mono text-muted-foreground hover:text-foreground mb-6 inline-flex min-h-11 items-center gap-2 transition-colors"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            Volver a la fiesta
+          </Link>
+          <RememberTicket
+            href={`/orders/${order.id}`}
+            label={savedTicketLabel(order.event)}
+            endsAt={order.event.ends_at}
+          />
+          <h1 className="font-display font-stretch-condensed text-[clamp(3.25rem,16vw,6rem)] leading-[0.85] font-extrabold uppercase">
             Ya <span className="highlight">estás</span> adentro
           </h1>
           <p className="mt-6 max-w-xl text-lg font-medium">
@@ -106,9 +124,9 @@ export default async function OrderPage({ params }: PageProps<"/orders/[orderId]
             <strong>{order.buyer_email}</strong>. Si no te llega, revisá spam o mostrá esta página
             en la puerta.
           </p>
-          <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-12 grid justify-items-center gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
             {order.tickets.map((ticket) => (
-              <li key={ticket.id}>
+              <li key={ticket.id} className="w-full max-w-sm">
                 <TicketView
                   event={order.event}
                   ticket={ticket}

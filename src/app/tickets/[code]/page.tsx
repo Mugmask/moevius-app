@@ -1,8 +1,13 @@
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Wordmark } from "@/components/brand";
+import { AuraBackdrop } from "@/components/aura-backdrop";
+import { MarkerFilter } from "@/components/doodles";
+import { RememberTicket } from "@/components/saved-tickets";
 import { TicketView } from "@/components/ticket-view";
+import { savedTicketLabel } from "@/lib/events";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -26,16 +31,31 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[code]"
   if (!ticket) notFound();
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-12">
-      <Wordmark />
-      <TicketView
-        className="max-w-sm [&_[role=img]]:size-40"
-        event={ticket.event}
-        ticket={ticket}
-        ticketType={ticket.ticket_type.name}
-        holder={ticket.order.buyer_name}
+    <main className="relative isolate flex flex-1 flex-col items-center px-4 pt-6 pb-16">
+      <RememberTicket
+        href={`/tickets/${ticket.code}`}
+        label={savedTicketLabel(ticket.event)}
+        endsAt={ticket.event.ends_at}
       />
-      <p className="text-muted-foreground max-w-xs text-center text-sm font-medium">
+      <MarkerFilter />
+      <AuraBackdrop />
+
+      <div className="w-full max-w-sm">
+        <Link
+          href="/"
+          className="label-mono text-muted-foreground hover:text-foreground mb-4 inline-flex min-h-11 items-center gap-2 transition-colors"
+        >
+          <ArrowLeft aria-hidden className="size-4" />
+          Volver a la fiesta
+        </Link>
+        <TicketView
+          event={ticket.event}
+          ticket={ticket}
+          ticketType={ticket.ticket_type.name}
+          holder={ticket.order.buyer_name}
+        />
+      </div>
+      <p className="text-muted-foreground mt-10 max-w-xs text-center text-sm font-medium">
         Mostrá este QR en la puerta con el brillo al máximo. Deja pasar a una persona, una sola vez.
       </p>
     </main>
