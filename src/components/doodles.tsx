@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 
 /**
- * La intervención a mano sobre el ticket: estrellas pintadas, círculos, flechas y notas en
- * letra de marcador. Todo decorativo (`aria-hidden`): lo que dicen las notas
+ * La intervención a mano sobre el ticket: estrellas pintadas, flechas y notas en letra de
+ * marcador. Todo decorativo (`aria-hidden`): lo que dicen las notas
  * también está escrito en el texto real. Las formas salen de una semilla, así son
  * irregulares pero siempre iguales (no rompen la hidratación).
  *
@@ -51,44 +51,6 @@ export function Star({ seed, className }: { seed: number; className?: string }) 
       <polygon points={points(10)} opacity={0.75} />
       <polygon points={points(14)} opacity={0.55} transform="rotate(4 50 50)" />
     </svg>
-  );
-}
-
-/** Círculo hecho de una pasada y un poco más, alrededor de lo que envuelve. */
-export function Circled({
-  seed,
-  className,
-  children,
-}: {
-  seed: number;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  const rand = random(seed);
-  let path = "";
-  for (let i = 0; i <= 44; i++) {
-    const angle = (i / 36) * Math.PI * 2 - 0.6;
-    const wobble = 1 + (rand() - 0.5) * 0.06;
-    const x = 50 + 48 * wobble * Math.cos(angle);
-    const y = 50 + 44 * wobble * Math.sin(angle) + i * 0.15;
-    path += `${i === 0 ? "M" : "L"}${round(x)} ${round(y)} `;
-  }
-  return (
-    <span className="relative inline-block">
-      {children}
-      <svg
-        aria-hidden
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        fill="none"
-        className={cn(
-          "text-accent pointer-events-none absolute -inset-x-3 -inset-y-2 h-[calc(100%+1rem)] w-[calc(100%+1.5rem)] stroke-current",
-          className,
-        )}
-      >
-        <path d={path} strokeWidth={2.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      </svg>
-    </span>
   );
 }
 

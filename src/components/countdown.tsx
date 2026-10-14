@@ -17,24 +17,3 @@ export function useSecondsLeft(target: string) {
   const now = useSyncExternalStore(subscribe, nowInSeconds, () => null);
   return now === null ? null : Math.max(0, Math.floor(Date.parse(target) / 1000) - now);
 }
-
-const UNITS = [
-  { label: "Días", seconds: 86_400, max: Infinity },
-  { label: "Horas", seconds: 3_600, max: 24 },
-  { label: "Min", seconds: 60, max: 60 },
-  { label: "Seg", seconds: 1, max: 60 },
-];
-
-/** La cuenta regresiva en una línea de ticket: "30D 21H 36M 02S". */
-export function CountdownLine({ startsAt }: { startsAt: string }) {
-  const left = useSecondsLeft(startsAt);
-  if (left === 0) return <span>Es hoy</span>;
-  return (
-    <span className="tabular-nums">
-      {UNITS.map(({ label, seconds, max }) => {
-        const value = left === null ? null : Math.floor(left / seconds) % max;
-        return `${value === null ? "--" : String(value).padStart(2, "0")}${label[0]}`;
-      }).join(" ")}
-    </span>
-  );
-}

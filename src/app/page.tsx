@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 
 import { startCheckout } from "@/components/checkout/actions";
 import { TicketCheckout } from "@/components/checkout/ticket-checkout";
-import { CountdownLine } from "@/components/countdown";
-import { Circled, MarkerFilter, Note, Star } from "@/components/doodles";
+import { MarkerFilter, Star } from "@/components/doodles";
 import { PageLoader } from "@/components/page-loader";
 import { ReceiptRow, ReceiptRule } from "@/components/receipt";
 import { SiteFooter } from "@/components/site-chrome";
@@ -204,9 +203,9 @@ const RECEIPT_PAPER =
   "bg-paper paper-crumple relative px-4 font-mono text-[0.8125rem] leading-relaxed uppercase sm:px-10 sm:text-sm lg:px-12 lg:text-[0.9375rem]";
 
 /**
- * La entrada que sale de la máquina, como un recibo intervenido a mano: arriba la fiesta
- * (fecha, lugar, lineup); abajo, separado por el troquel, el talón donde se completa la
- * compra (ver TicketCheckout). Al pie, el precio y el código de barras: es lo primero
+ * La entrada que sale de la máquina, armada como un afiche: arriba la fiesta con tipografía
+ * grande (la fecha es la protagonista, después el lugar y el lineup); abajo, separado por
+ * el troquel, el talón donde se completa la compra (ver TicketCheckout). Al pie, el precio y el código de barras: es lo primero
  * que asoma (`data-ticket-stub`, ver TicketPull).
  */
 function Ticket({
@@ -219,6 +218,8 @@ function Ticket({
   const soldOut = event.availability === "sold-out";
   // "Moevius Vol. 13" → "Vol. 13": el nombre va gigante arriba.
   const edition = event.title.replace(/^moevius\s*/i, "");
+  // "VIE 13" → el número va enorme y el día de la semana, chico al lado.
+  const [weekday, dayNumber] = event.day.split(" ");
 
   return (
     <article data-ticket className="text-ink relative isolate mx-3 sm:mx-10">
@@ -231,82 +232,93 @@ function Ticket({
 
       {/* Arriba del título queda papel en blanco: es lo último que sale, y así "MOEVIUS" no
           termina pegado a la ranura (y queda un tramo más para scrollear). */}
-      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-24 pb-7 lg:pt-28")}>
-        {/* Las estrellas van adentro del papel: lo que se pasa del borde se vería salir
-            por fuera de la ranura. Quedan debajo del título (`relative` en el header) y la
-            roja, pegada a su esquina (el `top` sigue al padding de arriba). */}
+      <div className={cn(RECEIPT_PAPER, "ticket-notch-bottom pt-24 pb-9 lg:pt-28")}>
+        {/* La estrella va adentro del papel (lo que se pasa del borde se vería salir por
+            fuera de la ranura), debajo del título (`relative` en el header) y pegada a su
+            esquina: el `top` sigue al padding de arriba. */}
         <Star
           seed={3}
           className="text-accent absolute top-16 right-1 size-16 rotate-12 sm:top-[4.25rem] sm:right-2 sm:size-24 lg:top-[4.5rem]"
         />
-        <Star
-          seed={8}
-          className="text-primary absolute top-[52%] left-1 size-12 -rotate-12 sm:left-2 sm:size-16"
-        />
-
-        <header className="relative text-center">
-          <h2 className="font-display font-stretch-expanded text-[clamp(2.75rem,12vw,4.75rem)] leading-[0.85] font-extrabold tracking-[-0.02em]">
+        <header className="relative">
+          <h2 className="font-display font-stretch-expanded text-center text-[clamp(2.75rem,12vw,4.75rem)] leading-[0.85] font-extrabold tracking-[-0.02em]">
             <span aria-hidden>Moevius</span>
             <span className="sr-only">{event.title}</span>
           </h2>
-          <p className="mt-3 tracking-[0.2em]">
-            {edition && <span aria-hidden>{edition} · </span>}Admite uno · +18
-          </p>
+          {edition && (
+            <p
+              aria-hidden
+              className="border-ink font-display font-stretch-condensed mt-5 border-t-2 pt-2 text-center text-3xl leading-none font-extrabold tracking-tight sm:text-4xl"
+            >
+              {edition}
+            </p>
+          )}
         </header>
 
-        <ReceiptRule />
-
-        <dl className="space-y-2">
-          <ReceiptRow label="Fecha">
-            <span className="relative">
-              <Circled seed={4}>
-                {event.day} {event.month}
-              </Circled>
-              <Note className="absolute -top-7 right-0 rotate-[-6deg] text-base whitespace-nowrap sm:text-lg">
-                ¡agendalo!
-              </Note>
+        {/* La fecha es la protagonista: el número enorme y al lado mes, día y horario. */}
+        <section className="border-ink mt-8 border-y-2 py-5" aria-label="Fecha y horario">
+          <p className="sr-only">
+            {event.day} de {event.month} de {event.year}, de {event.time}
+          </p>
+          <div aria-hidden className="grid grid-cols-[auto_1fr] items-center gap-x-4 sm:gap-x-6">
+            <span className="font-display font-stretch-condensed text-[clamp(6rem,32vw,9.5rem)] leading-[0.75] font-extrabold tracking-[-0.04em] tabular-nums">
+              {dayNumber}
             </span>
-          </ReceiptRow>
-          <ReceiptRow label="Horario">{event.time}</ReceiptRow>
-          <ReceiptRow label="Lugar">{event.venue}</ReceiptRow>
-          <ReceiptRow label="Zona">{event.neighborhood}</ReceiptRow>
-        </dl>
-        <a
-          href={event.mapsUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-2 underline-offset-4"
-        >
-          {event.address ? `${event.address} · ` : ""}Cómo llegar
-          <ArrowUpRight className="size-4" />
-          <span className="sr-only">(abre Google Maps)</span>
-        </a>
+            <div className="min-w-0">
+              <p className="font-display font-stretch-extra-condensed text-[clamp(1.5rem,7.5vw,2.75rem)] leading-[0.9] font-extrabold whitespace-nowrap">
+                {event.month}
+              </p>
+              <p className="mt-1 tracking-[0.15em]">
+                {weekday} · {event.year}
+              </p>
+              <p className="font-display font-stretch-condensed mt-3 text-2xl leading-none font-bold tabular-nums sm:text-3xl">
+                {event.time.replace("—", "→")}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8" aria-labelledby="ticket-venue">
+          <p className="tracking-[0.15em] opacity-60">Dónde</p>
+          <h3
+            id="ticket-venue"
+            className="font-display font-stretch-expanded mt-1 text-[clamp(1.75rem,9vw,2.75rem)] leading-[0.9] font-extrabold tracking-tight"
+          >
+            {event.venue}
+          </h3>
+          <p className="mt-2">{event.neighborhood}</p>
+          <a
+            href={event.mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-2 underline-offset-4"
+          >
+            {event.address ? `${event.address} · ` : ""}Cómo llegar
+            <ArrowUpRight className="size-4" />
+            <span className="sr-only">(abre Google Maps)</span>
+          </a>
+        </section>
 
         {event.lineup.length > 0 && (
-          <>
-            <ReceiptRule />
-            <div aria-hidden className="grid grid-cols-[4rem_1fr] gap-x-3 opacity-60">
-              <span>Hora</span>
-              <span>Lineup</span>
-            </div>
-            <ol className="mt-2 space-y-1.5" aria-label="Lineup">
+          <section className="mt-8" aria-labelledby="ticket-lineup">
+            <p id="ticket-lineup" className="tracking-[0.15em] opacity-60">
+              Lineup
+            </p>
+            <ol className="divide-ink/20 border-ink mt-2 divide-y-2 border-t-2">
               {event.lineup.map((set, i) => (
-                <li key={`${set.artist}-${i}`} className="grid grid-cols-[4rem_1fr] gap-x-3">
-                  <span className="opacity-60 tabular-nums">{set.time ?? "—"}</span>
-                  <span className="font-bold">{set.artist}</span>
+                <li
+                  key={`${set.artist}-${i}`}
+                  className="flex items-baseline justify-between gap-4 py-3"
+                >
+                  <span className="font-display font-stretch-condensed text-2xl leading-[0.95] font-extrabold sm:text-3xl">
+                    {set.artist}
+                  </span>
+                  {set.time && <span className="shrink-0 tabular-nums opacity-60">{set.time}</span>}
                 </li>
               ))}
             </ol>
-          </>
+          </section>
         )}
-
-        <ReceiptRule />
-
-        <dl>
-          <ReceiptRow label="Faltan">
-            <CountdownLine startsAt={event.startsAt} />
-          </ReceiptRow>
-        </dl>
       </div>
 
       {/* Talón: lo separa del cuerpo el troquel (línea punteada y muescas recortadas). */}
@@ -320,7 +332,8 @@ function Ticket({
         <div data-ticket-stub className={cn(!soldOut && "mt-8")}>
           {!soldOut && <ReceiptRule className="mt-0" />}
           <dl>
-            <ReceiptRow label={soldOut ? "Entradas" : "Desde"}>
+            {/* "Desde" solo si hay varios lotes con precios distintos. */}
+            <ReceiptRow label={soldOut ? "Entradas" : event.tiers.length > 1 ? "Desde" : "Entrada"}>
               {soldOut ? "Agotado" : PRICE_FORMAT.format(event.price)}
             </ReceiptRow>
           </dl>
