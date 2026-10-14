@@ -24,7 +24,7 @@ export function LegalDocument({
     <>
       <main className="relative isolate flex-1 px-3 pt-6 pb-12 sm:px-5 sm:pt-10 sm:pb-20">
         <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-          <div className="glow text-accent absolute top-0 left-1/2 -z-20 size-[120vw] max-w-[56rem] -translate-x-1/2 rounded-full opacity-20" />
+          <div className="glow text-aura absolute top-0 left-1/2 -z-20 size-[120vw] max-w-[56rem] -translate-x-1/2 rounded-full opacity-35" />
         </div>
 
         {/* Sin navbar: la vuelta al ticket va arriba de la hoja. */}

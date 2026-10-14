@@ -42,13 +42,7 @@ export function PageLoader() {
         state === "leaving" && "pointer-events-none opacity-0",
       )}
     >
-      <span className="font-display font-stretch-expanded text-3xl font-extrabold tracking-tight">
-        MOEVIUS
-      </span>
-      <span className="label-mono text-muted-foreground flex items-center gap-2">
-        <span className="bg-primary size-2 animate-pulse rounded-full motion-reduce:animate-none" />
-        Imprimiendo tu ticket
-      </span>
+      <span className="border-foreground/15 border-t-primary size-10 animate-spin rounded-full border-4" />
     </div>
   );
 }
